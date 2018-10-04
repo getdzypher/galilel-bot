@@ -6,7 +6,8 @@ to any Discord channel. It allows notification about received transactions like
 donations and monitor movement of premine addresses. The block notification
 system is able to announce current block height if new block is detected in the
 network. The configuration of the bot is independent from the wallet, changes
-doesn't require wallet daemon restart.
+doesn't require wallet daemon restart. It supports testing of announcements
+through local console as well as logging of notifications to a custom logfile.
 
 # Discord Configuration
 
@@ -62,6 +63,21 @@ DISCORD_BLOCK_WEBHOOK_TOKEN="94TsRdZNTa1neShJQ9pA7baGRx2yrY1P8EVZmQM0ubhkQKzIiua
 The address column is an optional field if the wallet notification bot
 `walletnotify` is used. While using the block notification bot `blocknotify`
 only, you can leave this field empty.
+
+The galilel-bot has built-in and by default enabled capabilities for logging of
+notifications. In standard configuration it writes it to `/var/log/galilel/galilel-bot.log`.
+If you need to specify another logfile, please do in `/etc/galilel/galilel-bot.conf`
+and change the following:
+
+```
+# notification logfile (disabled with value /dev/null).
+LOGFILE="/var/log/galilel/galilel-bot.log"
+```
+
+To disable logging, it is enough to use `/dev/null`. Please be aware that the
+logfile can grow significantly over the time, especially if you process a lot
+of transactions from monitored wallet addresses. Therefore it is highly
+recommended to configure logfile rotation. See [logrotate](https://github.com/logrotate/logrotate) for more information.
 
 # Testing
 

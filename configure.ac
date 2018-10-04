@@ -24,6 +24,10 @@ AC_PATH_PROG([chmodpath], [chmod], [no])
 if test "$chmodpath" = "no"; then
 	AC_MSG_ERROR([chmod binary is required])
 fi
+AC_PATH_PROG([datepath], [date], [no])
+if test "$datepath" = "no"; then
+	AC_MSG_ERROR([date binary is required])
+fi
 AC_PATH_PROG([lnpath], [ln], [no])
 if test "$lnpath" = "no"; then
 	AC_MSG_ERROR([ln binary is required])
