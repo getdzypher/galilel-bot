@@ -8,3 +8,6 @@ galilel_botdir = $(sysconfdir)/galilel
 galilel_bot_DATA = galilel-bot.conf
 
 EXTRA_DIST = $(galilel_bot_DATA)
+
+install-data-hook:
+	$(chmodpath) 0644 $(DESTDIR)$(galilel_botdir)/galilel-bot.conf

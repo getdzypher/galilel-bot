@@ -60,8 +60,27 @@ DISCORD_BLOCK_WEBHOOK_TOKEN="94TsRdZNTa1neShJQ9pA7baGRx2yrY1P8EVZmQM0ubhkQKzIiua
 ```
 
 The address column is an optional field if the wallet notification bot
-`walletnotify` is used. With block notification bot `blocknotify` you can leave
-this field empty.
+`walletnotify` is used. While using the block notification bot `blocknotify`
+only, you can leave this field empty.
+
+# Testing
+
+It is possible to test wallet daemon configuration with announcements to local
+console. You can execute the bot manually, for example wallet notification:
+
+```
+$> galilel-bot --test --notify-wallet GALI e6698a51943e23877d3ad71d4f5c6231a5b4ba90f4f741e4aebce31b9585a9a1
+Received staking reward **'19.99999'** 'GALI' with new balance of **'268413.04135991'** 'GALI'
+```
+
+and block notification:
+
+```
+$> galilel-bot --test --notify-block GALI 570d66289f41f835cbc5a6ba521ad007ab9958c4773c1fea82d8b338e633bd8c
+New block **'189685'** at **'Thu Oct 4 15:45:48 CEST 2018'** with difficulty **'50829.65'**
+```
+
+The output is the raw text with the discord markdown characters.
 
 # Help
 
