@@ -2,7 +2,11 @@
 
 galilel-bot is the bridge between the Galilel coin daemon and Discord. It uses
 the Galilel internal notification system to forward blockchain related messages
-to any Discord channel.
+to any Discord channel. It allows notification about received transactions like
+donations and monitor movement of premine addresses. The block notification
+system is able to announce current block height if new block is detected in the
+network. The configuration of the bot is independent from the wallet, changes
+doesn't require wallet daemon restart.
 
 # Discord Configuration
 
@@ -10,7 +14,7 @@ The notification interface uses Discords Webhook system. It is required to
 create Webhooks according to the bot features you want to use. If you are going
 to use all features the following Webhooks have to be created:
 
-* Donation Bot
+* Wallet Bot
 * Block Bot
 
 The names can be freely chosen. You need to copy the `webhook.id` and the
@@ -22,8 +26,17 @@ It is necessary to enable the block and wallet notifications of the Galilel
 coin daemon. Please add the following to `~/.galilel/galilel.conf` file:
 
 ```
-walletnotify=/usr/bin/galilel-bot DONATION %s
-blocknotify=/usr/bin/galilel-bot BLOCK %s
+walletnotify=/usr/bin/galilel-bot --notify-wallet %s
+blocknotify=/usr/bin/galilel-bot --notify-block %s
+```
+
+It is required to give galilel-bot RPC access to the Galilel coin daemon.
+Minimum required configuration is the following:
+
+```
+rpcuser=galilel-user
+rpcpassword=galilel-password
+rpcallowip=127.0.0.1
 ```
 
 # Bot Configuration
@@ -32,15 +45,14 @@ The configuration takes place in a single file `/etc/galilel/galilel-bot.conf`
 Please change the following options to match your requirements:
 
 ```
-# coin ticker to use for announcements.
-COIN_TICKER="GALI"
+# addresses used for announcements (one per row, format: ticker:rpcuser:rpcpassword:address).
+COIN_ADDRESSES=(
+	"GALI:galilel-user:galilel-password:UUr5nDmykhun1HWM7mJAqLVeLzoGtx19dX"
+)
 
-# donation address used for announcements.
-COIN_ADDRESS="UUr5nDmykhun1HWM7mJAqLVeLzoGtx19dX"
-
-# discord webhook (donation notification bot).
-DISCORD_DONATION_WEBHOOK_ID="823434590193434954"
-DISCORD_DONATION_WEBHOOK_TOKEN="5fbJ3d531IKTk9X706d35R1uovFZfVTcAkDQUp4vjkH5xiLf6FIb2lUe6J4fCqbCdA9v"
+# discord webhook (wallet notification bot).
+DISCORD_WALLET_WEBHOOK_ID="823434590193434954"
+DISCORD_WALLET_WEBHOOK_TOKEN="5fbJ3d531IKTk9X706d35R1uovFZfVTcAkDQUp4vjkH5xiLf6FIb2lUe6J4fCqbCdA9v"
 
 # discord webhook (block notification bot).
 DISCORD_BLOCK_WEBHOOK_ID="907862382457824421"
@@ -53,7 +65,7 @@ If you need additional help regarding setup, please join our Discord channel [ht
 
 # Donations
 
-This project is a community based and decisions are made based on majority of
+This project is community based and decisions are made based on majority of
 votes. If you like the work and fork it for your own coin, please donate
 something to support its further development. You can use the following
 addresses:
