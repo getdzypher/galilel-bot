@@ -26,8 +26,8 @@ It is necessary to enable the block and wallet notifications of the Galilel
 coin daemon. Please add the following to `~/.galilel/galilel.conf` file:
 
 ```
-walletnotify=/usr/bin/galilel-bot --notify-wallet %s
-blocknotify=/usr/bin/galilel-bot --notify-block %s
+walletnotify=/usr/bin/galilel-bot --notify-wallet GALI %s
+blocknotify=/usr/bin/galilel-bot --notify-block GALI %s
 ```
 
 It is required to give galilel-bot RPC access to the Galilel coin daemon.
@@ -45,8 +45,8 @@ The configuration takes place in a single file `/etc/galilel/galilel-bot.conf`
 Please change the following options to match your requirements:
 
 ```
-# addresses used for announcements (one per row, format: ticker:rpcuser:rpcpassword:address).
-COIN_ADDRESSES=(
+# coin configuration mappings. (one per row, format: ticker:rpcuser:rpcpassword:[address])
+COIN_CONFIGS=(
 	"GALI:galilel-user:galilel-password:UUr5nDmykhun1HWM7mJAqLVeLzoGtx19dX"
 )
 
@@ -58,6 +58,10 @@ DISCORD_WALLET_WEBHOOK_TOKEN="5fbJ3d531IKTk9X706d35R1uovFZfVTcAkDQUp4vjkH5xiLf6F
 DISCORD_BLOCK_WEBHOOK_ID="907862382457824421"
 DISCORD_BLOCK_WEBHOOK_TOKEN="94TsRdZNTa1neShJQ9pA7baGRx2yrY1P8EVZmQM0ubhkQKzIiuaX9QZ97KdquaUqZzdy"
 ```
+
+The address column is an optional field if the wallet notification bot
+(`walletnotify`) is used. With block notification bot (`blocknotify`) you can
+leave this field empty.
 
 # Help
 
