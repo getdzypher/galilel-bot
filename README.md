@@ -46,9 +46,9 @@ The configuration takes place in a single file `/etc/galilel/galilel-bot.conf`
 Please change the following options to match your requirements:
 
 ```
-# coin configuration mappings (one per row, format: ticker:rpcuser:rpcpassword:[address]).
+# coin configuration mappings (one per row, format: ticker:rpcuser:rpcpassword:rpcip:rpcport:[address]).
 COIN_CONFIGS=(
-	"GALI:galilel-user:galilel-password:UUr5nDmykhun1HWM7mJAqLVeLzoGtx19dX"
+	"GALI:galilel-user:galilel-password:127.0.0.1:36002:UUr5nDmykhun1HWM7mJAqLVeLzoGtx19dX"
 )
 
 # discord webhook (wallet notification bot).
@@ -65,7 +65,7 @@ The address column is an optional field if the wallet notification bot
 only, you can leave this field empty.
 
 The galilel-bot has built-in and by default enabled capabilities for logging of
-notifications. In standard configuration it writes it to `/var/log/galilel/galilel-bot.log`.
+notifications. In standard configuration it writes to `/var/log/galilel/galilel-bot.log`.
 If you need to specify another logfile, please do in `/etc/galilel/galilel-bot.conf`
 and change the following:
 

@@ -24,9 +24,17 @@ AC_PATH_PROG([chmodpath], [chmod], [no])
 if test "$chmodpath" = "no"; then
 	AC_MSG_ERROR([chmod binary is required])
 fi
+AC_PATH_PROG([curlpath], [curl], [no])
+if test "$curlpath" = "no"; then
+	AC_MSG_ERROR([curl binary is required])
+fi
 AC_PATH_PROG([datepath], [date], [no])
 if test "$datepath" = "no"; then
 	AC_MSG_ERROR([date binary is required])
+fi
+AC_PATH_PROG([jshonpath], [jshon], [no])
+if test "$jshonpath" = "no"; then
+	AC_MSG_ERROR([jshon binary is required])
 fi
 AC_PATH_PROG([lnpath], [ln], [no])
 if test "$lnpath" = "no"; then

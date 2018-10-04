@@ -17,9 +17,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# exit immediately if command fails, use exit code of righmost pipeline.
-set -eo pipefail
-
 # load configuration file.
 source "@SYSCONFDIR@/galilel/galilel-bot.conf"
 
@@ -34,6 +31,11 @@ declare -g GLOBAL__parameter_test="disabled"
 
 # move config options to global variables.
 declare -g GLOBAL__parameter_logfile="${LOGFILE:-/var/log/galilel/galilel-bot.log}"
+declare -a GLOBAL__parameter_configs=("${COIN_CONFIGS[@]}")
+declare -g GLOBAL__parameter_wallet_webhook_id="${DISCORD_WALLET_WEBHOOK_ID}"
+declare -g GLOBAL__parameter_wallet_webhook_token="${DISCORD_WALLET_WEBHOOK_TOKEN}"
+declare -g GLOBAL__parameter_block_webhook_id="${DISCORD_BLOCK_WEBHOOK_ID}"
+declare -g GLOBAL__parameter_block_webhook_token="${DISCORD_BLOCK_WEBHOOK_TOKEN}"
 
 # @_galilel_bot__printf()
 #
@@ -134,6 +136,73 @@ function galilel_bot__notification_wallet() {
 # this function sends message to discord on block changes in the network.
 function galilel_bot__notification_block() {
 
+	# local variables.
+	local LOCAL__ticker="${1}"
+	local LOCAL__blockhash="${2}"
+
+	# loop through the configuration array.
+	local LOCAL__index
+	for (( LOCAL__index = 0; LOCAL__index < "${#GLOBAL__parameter_configs[@]}" ; LOCAL__index++ )) ; do
+
+		# read data into variables.
+		IFS=':' read LOCAL__ticker LOCAL__username LOCAL__password LOCAL__ip LOCAL__port LOCAL__address <<< "${GLOBAL__parameter_configs[${LOCAL__index}]}"
+
+		# fetch block information.
+		@CURL@ \
+			--request POST \
+			--max-time 5 \
+			--silent \
+			--fail \
+			--header 'content-type: text/plain;' \
+			--data-binary '{ "jsonrpc" : "1.0", "id" : "curltest", "method" : "getblock", "params" : [ '"${LOCAL__blockhash}"' ] }' \
+			--user "${LOCAL__username}:${LOCAL__password}" \
+			"http://${LOCAL__ip}:${LOCAL__port}/" |
+		while read LOCAL__line ; do
+
+			# get block information.
+			local LOCAL__height="$(@JSHON@ -Q -e result -e height -u <<< "${LOCAL__line}")"
+			local LOCAL__difficulty="$(@JSHON@ -Q -e result -e difficulty -u <<< "${LOCAL__line}")"
+			local LOCAL__time="$(@JSHON@ -Q -e result -e time -u <<< "${LOCAL__line}")"
+
+			# get current date.
+			local LOCAL__date="$(@DATE@ --date "@${LOCAL__time}")"
+
+			# format variables.
+			local LOCAL__difficulty="$(printf "%.2f" "${LOCAL__difficulty}")"
+
+			# check if in test mode.
+			[ "${GLOBAL__parameter_test}" == "enabled" ] && {
+				galilel_bot__printf LOG_INFO "New block **'"${LOCAL__height}"'** at **'"${LOCAL__date}"'** with difficulty **'"${LOCAL__difficulty}"'**"
+			}
+
+			# check if in production mode.
+			[ "${GLOBAL__parameter_test}" == "disabled" ] && {
+				galilel_bot__printf LOG_ONLY "New block **'"${LOCAL__height}"'** at **'"${LOCAL__date}"'** with difficulty **'"${LOCAL__difficulty}"'**"
+
+				# push block notification to discord.
+				/usr/bin/curl \
+					--request POST \
+					--max-time 5 \
+					--silent \
+					--fail \
+					--header 'content-Type: application/json' \
+					--data-binary '{ "content" : "New block **'"${LOCAL__height}"'** at **'"$(/usr/bin/date --date "@${LOCAL__time}")"'** with difficulty **'"$(printf "%.2f" "${LOCAL__difficulty}")"'**" }' \
+					"https://discordapp.com/api/webhooks/${GLOBAL__parameter_block_webhook_id}/${GLOBAL__parameter_block_webhook_token}"
+			}
+		done
+
+		# check pipe status of curl command.
+		case "${PIPESTATUS[0]}" in
+			7)
+
+				# connection error.
+				galilel_bot__printf LOG_INFO "${GALILEL_BOT_PROCESS}: failed to connect to galilel RPC wallet"
+
+				# return error.
+				return 7
+		esac
+	done
+
 	# if no error was found, return zero.
 	return 0
 }
@@ -146,7 +215,6 @@ function galilel_bot__init() {
 	# check if logfile is writable.
 	[ ! -w "${GLOBAL__parameter_logfile}" ] && {
 		galilel_bot__printf LOG_HELP "${GALILEL_BOT_PROCESS}: logfile ${GLOBAL__parameter_logfile} is not writable"
-		galilel_bot__printf LOG_HELP "Try \`${GALILEL_BOT_PROCESS} --help' for more information."
 
 		# return with error.
 		return 1
