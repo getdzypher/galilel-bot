@@ -45,7 +45,7 @@ The configuration takes place in a single file `/etc/galilel/galilel-bot.conf`
 Please change the following options to match your requirements:
 
 ```
-# coin configuration mappings. (one per row, format: ticker:rpcuser:rpcpassword:[address])
+# coin configuration mappings (one per row, format: ticker:rpcuser:rpcpassword:[address]).
 COIN_CONFIGS=(
 	"GALI:galilel-user:galilel-password:UUr5nDmykhun1HWM7mJAqLVeLzoGtx19dX"
 )
@@ -60,8 +60,8 @@ DISCORD_BLOCK_WEBHOOK_TOKEN="94TsRdZNTa1neShJQ9pA7baGRx2yrY1P8EVZmQM0ubhkQKzIiua
 ```
 
 The address column is an optional field if the wallet notification bot
-(`walletnotify`) is used. With block notification bot (`blocknotify`) you can
-leave this field empty.
+`walletnotify` is used. With block notification bot `blocknotify` you can leave
+this field empty.
 
 # Help
 
