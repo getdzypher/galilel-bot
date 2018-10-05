@@ -166,7 +166,7 @@ function galilel_bot__curl_discord() {
 		7)
 
 			# connection error.
-			galilel_bot__printf INFO "${GALILEL_BOT_PROCESS}: failed to connect to galilel RPC wallet"
+			galilel_bot__printf INFO "${GALILEL_BOT_PROCESS}: failed to connect to discord webservice"
 
 			# return error.
 			return 7
@@ -174,7 +174,7 @@ function galilel_bot__curl_discord() {
 		22)
 
 			# http protocol error.
-			galilel_bot__printf INFO "${GALILEL_BOT_PROCESS}: failed to retrieve url from RPC wallet"
+			galilel_bot__printf INFO "${GALILEL_BOT_PROCESS}: failed to retrieve url from discord webservice"
 
 			# return error.
 			return 22
@@ -219,7 +219,7 @@ function galilel_bot__curl_wallet() {
 		7)
 
 			# connection error.
-			galilel_bot__printf INFO "${GALILEL_BOT_PROCESS}: failed to connect to galilel RPC wallet"
+			galilel_bot__printf INFO "${GALILEL_BOT_PROCESS}: failed to connect to RPC wallet"
 
 			# return error.
 			return 7
@@ -273,7 +273,7 @@ function galilel_bot__notification_wallet() {
 			'{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "gettransaction", "params" : [ "'"${LOCAL__transactionid}"'" ] }' || return "${?}"
 
 		# loop through result.
-		echo -e "${GLOBAL__result}" | while read LOCAL__line ; do
+		while read LOCAL__line ; do
 
 			# get transaction information.
 			local LOCAL__generated="$(@JSHON@ -Q -e result -e generated -u <<< "${LOCAL__line}")"
@@ -298,7 +298,7 @@ function galilel_bot__notification_wallet() {
 					'{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "getbalance", "params" : [ ] }' || return "${?}"
 
 				# loop through result.
-				echo -e "${GLOBAL__result}" | while read LOCAL__line ; do
+				while read LOCAL__line ; do
 
 					# get balance information.
 					local LOCAL__balance="$(@JSHON@ -Q -e result -u <<< "${LOCAL__line}")"
@@ -320,9 +320,9 @@ function galilel_bot__notification_wallet() {
 							"${GLOBAL__parameter_wallet_webhook_token}" \
 							'Received staking reward **'"${LOCAL__reward}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'' || return "${?}"
 					}
-				done
+				done <<< "${GLOBAL__result}"
 			}
-		done
+		done <<< "${GLOBAL__result}"
 
 		# check pipe status of curl command.
 		case "${PIPESTATUS[0]}" in
@@ -384,7 +384,7 @@ function galilel_bot__notification_block() {
 			'{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "getblock", "params" : [ "'"${LOCAL__blockhash}"'" ] }' || return "${?}"
 
 		# loop through result.
-		echo -e "${GLOBAL__result}" | while read LOCAL__line ; do
+		while read LOCAL__line ; do
 
 			# get block information.
 			local LOCAL__height="$(@JSHON@ -Q -e result -e height -u <<< "${LOCAL__line}")"
@@ -413,7 +413,7 @@ function galilel_bot__notification_block() {
 					"${GLOBAL__parameter_wallet_webhook_token}" \
 					'New block **'"${LOCAL__height}"'** at **'"${LOCAL__date}"'** with difficulty **'"${LOCAL__difficulty}"'**' || return "${?}"
 			}
-		done
+		done <<< "${GLOBAL__result}"
 	done
 
 	# if no error was found, return zero.
@@ -501,6 +501,14 @@ function galilel_bot__main() {
 	# second parse command line for custom config file.
 	for LOOP__index in "${!LOCAL__parameters[@]}" ; do
 		case "${LOCAL__parameters[${LOOP__index}]}" in
+			--debug)
+				declare -g GLOBAL__parameter_debug="enabled"
+				unset LOCAL__parameters[${LOOP__index}]
+			;;
+			--test)
+				declare -g GLOBAL__parameter_test="enabled"
+				unset LOCAL__parameters[${LOOP__index}]
+			;;
 			--conf)
 
 				# variables.
@@ -535,19 +543,12 @@ function galilel_bot__main() {
 		esac
 	done
 
+	# load configuration and do basic checks.
 	galilel_bot__init || return "${?}"
 
 	# third parse command line for main switches.
 	for LOOP__index in "${!LOCAL__parameters[@]}" ; do
 		case "${LOCAL__parameters[${LOOP__index}]}" in
-			--debug)
-				declare -g GLOBAL__parameter_debug="enabled"
-				unset LOCAL__parameters[${LOOP__index}]
-			;;
-			--test)
-				declare -g GLOBAL__parameter_test="enabled"
-				unset LOCAL__parameters[${LOOP__index}]
-			;;
 			--notify-wallet)
 
 				# variables.
