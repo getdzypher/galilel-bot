@@ -44,6 +44,10 @@ AC_PATH_PROG([mkdirpath], [mkdir], [no])
 if test "$mkdirpath" = "no"; then
 	AC_MSG_ERROR([mkdir binary is required])
 fi
+AC_PATH_PROG([realpathpath], [realpath], [no])
+if test "$realpathpath" = "no"; then
+	AC_MSG_ERROR([realpath binary is required])
+fi
 AC_PATH_PROG([rmpath], [rm], [no])
 if test "$rmpath" = "no"; then
 	AC_MSG_ERROR([rm binary is required])

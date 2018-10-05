@@ -9,6 +9,9 @@ galilel_bot_DATA = galilel-bot.bash
 
 EXTRA_DIST = $(galilel_bot_DATA)
 
+# relative path to configuration directory.
+SYSCONFDIR_RELATIVE = $(shell $(realpathpath) --relative-to $(DESTDIR)$(libdir)/galilel-bot $(DESTDIR)$(sysconfdir))
+
 # symlink main script to binary search path (requires uninstall-hook).
 install-data-hook:
 	$(sedpath) 's,@BASH@,${bashpath},g' -i $(DESTDIR)${galilel_botdir}/galilel-bot.bash
@@ -18,7 +21,7 @@ install-data-hook:
 	$(sedpath) 's,@GALILEL_BOT_AUTHOR@,$(PACKAGE_BUGREPORT),g' -i $(DESTDIR)${galilel_botdir}/galilel-bot.bash
 	$(sedpath) 's,@GALILEL_BOT_VERSION@,$(PACKAGE_VERSION),g' -i $(DESTDIR)${galilel_botdir}/galilel-bot.bash
 	$(sedpath) 's,@JSHON@,${jshonpath},g' -i $(DESTDIR)${galilel_botdir}/galilel-bot.bash
-	$(sedpath) 's,@SYSCONFDIR@,$(DESTDIR)$(sysconfdir),g' -i $(DESTDIR)${galilel_botdir}/galilel-bot.bash
+	$(sedpath) 's,@SYSCONFDIR@,${SYSCONFDIR_RELATIVE},g' -i $(DESTDIR)${galilel_botdir}/galilel-bot.bash
 	$(chmodpath) 0755 $(DESTDIR)${galilel_botdir}/galilel-bot.bash
 	$(mkdirpath) -p $(DESTDIR)$(bindir)
 	$(lnpath) -s $(DESTDIR)${galilel_botdir}/galilel-bot.bash $(DESTDIR)$(bindir)/galilel-bot
