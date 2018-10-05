@@ -85,6 +85,11 @@ It is possible to test wallet daemon configuration with announcements to local
 console. You can execute the bot manually, for example wallet notification:
 
 ```
+$> galilel-bot --test --notify-wallet GALI c9d674b4a53cf31086bac309b11bd860945e8d53597eabaf9a4216c6868b97ea
+Received donation of **'250.0'** 'GALI' with new balance of **'270343.04048631'** 'GALI'
+```
+
+```
 $> galilel-bot --test --notify-wallet GALI e6698a51943e23877d3ad71d4f5c6231a5b4ba90f4f741e4aebce31b9585a9a1
 Received staking reward **'19.99999'** 'GALI' with new balance of **'268413.04135991'** 'GALI'
 ```
