@@ -8,6 +8,8 @@ system is able to announce current block height if new block is detected in the
 network. The configuration of the bot is independent from the wallet, changes
 doesn't require wallet daemon restart. It supports testing of announcements
 through local console as well as logging of notifications to a custom logfile.
+It supports multiple coin daemons from different cryptocurrencies as it uses
+generic RPC commands.
 
 # Discord Configuration
 

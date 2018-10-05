@@ -18,7 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # global variables with process information.
-export GALILEL_BOT_PROCESS="$(@BASENAME@ "${0}")"
+export GALILEL_BOT_PROCESS="${0##*/}"
 export GALILEL_BOT_VERSION="@GALILEL_BOT_VERSION@"
 export GALILEL_BOT_AUTHOR="@GALILEL_BOT_AUTHOR@"
 
@@ -67,14 +67,14 @@ function galilel_bot__printf() {
 			esac
 
 			# check if we should write to logfile.
-			[ -z "${GLOBAL__parameter_logfile}" ] && {
+			[ -n "${GLOBAL__parameter_logfile}" ] && {
 				echo -e "$(@DATE@ '+%b %e %H:%M:%S')" "${HOSTNAME}" "${GALILEL_BOT_PROCESS}[$$]:" "${FUNCNAME[1]##*__}() ${@}" >> "${GLOBAL__parameter_logfile}"
 			}
 		;;
 		FILE)
 
 			# check if we should write to logfile.
-			[ -z "${GLOBAL__parameter_logfile}" ] && {
+			[ -n "${GLOBAL__parameter_logfile}" ] && {
 				echo -e "$(@DATE@ '+%b %e %H:%M:%S')" "${HOSTNAME}" "${GALILEL_BOT_PROCESS}[$$]:" "${FUNCNAME[1]##*__}() ${@}" >> "${GLOBAL__parameter_logfile}"
 			}
 		;;
@@ -256,12 +256,20 @@ function galilel_bot__init() {
 	GLOBAL__parameter_block_webhook_id="${DISCORD_BLOCK_WEBHOOK_ID}"
 	GLOBAL__parameter_block_webhook_token="${DISCORD_BLOCK_WEBHOOK_TOKEN}"
 
-	# check if logfile is enabled and writable.
-	[ -n "${GLOBAL__parameter_logfile}" ] && [ ! -w "${GLOBAL__parameter_logfile}" ] && {
-		galilel_bot__printf HELP "${GALILEL_BOT_PROCESS}: logfile ${GLOBAL__parameter_logfile} is not writable"
+	# check if logfile is enabled, directory and file is writable.
+	[ -n "${GLOBAL__parameter_logfile}" ] && {
+		[ ! -w "${GLOBAL__parameter_logfile%/*}" ] && {
+			galilel_bot__printf HELP "${GALILEL_BOT_PROCESS}: logfile directory ${GLOBAL__parameter_logfile%/*} is not writable"
 
-		# return with error.
-		return 1
+			# return with error.
+			return 1
+		}
+		[ -e "${GLOBAL__parameter_logfile}" ] && [ ! -w "${GLOBAL__parameter_logfile}" ] && {
+			galilel_bot__printf HELP "${GALILEL_BOT_PROCESS}: logfile ${GLOBAL__parameter_logfile} is not writable"
+
+			# return with error.
+			return 1
+		}
 	}
 
 	# if no error was found, return zero.
@@ -420,7 +428,7 @@ function galilel_bot__main() {
 		esac
 	done
 
-	# check if unprocessed parameters are left..
+	# check if unprocessed parameters are left.
 	[ "${#LOCAL__parameters[@]}" != "0" ] && {
 
 		# show the help for an unknown option.
