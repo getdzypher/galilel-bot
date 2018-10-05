@@ -12,10 +12,6 @@ AC_PREREQ(2.53)
 AC_REVISION($Revision: 1.6 $)
 
 # Exporting some required variables.
-AC_PATH_PROG([basenamepath], [basename], [no])
-if test "$basenamepath" = "no"; then
-	AC_MSG_ERROR([basename binary is required])
-fi
 AC_PATH_PROG([bashpath], [bash], [no])
 if test "$bashpath" = "no"; then
 	AC_MSG_ERROR([bash binary is required])
