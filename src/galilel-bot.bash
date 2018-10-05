@@ -417,7 +417,7 @@ function galilel_bot__notification_block() {
 				galilel_bot__curl_discord \
 					"https://discordapp.com/api/webhooks" \
 					"${GLOBAL__parameter_block_webhook_id}" \
-					"${GLOBAL__parameter_wallet_webhook_token}" \
+					"${GLOBAL__parameter_block_webhook_token}" \
 					'New block **'"${LOCAL__height}"'** at **'"${LOCAL__date}"'** with difficulty **'"${LOCAL__difficulty}"'**' || return "${?}"
 			}
 		done <<< "${GLOBAL__result}"
