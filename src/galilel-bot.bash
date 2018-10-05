@@ -264,6 +264,22 @@ function galilel_bot__notification_wallet() {
 			continue
 		}
 
+		# get wallet balance.
+		galilel_bot__curl_wallet \
+			"${LOCAL__ip}" \
+			"${LOCAL__port}" \
+			"${LOCAL__username}" \
+			"${LOCAL__password}" \
+			'{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "getbalance", "params" : [ ] }' || return "${?}"
+
+		# loop through result.
+		while read LOCAL__line ; do
+
+			# get balance information.
+			local LOCAL__balance="$(@JSHON@ -Q -e result -u <<< "${LOCAL__line}")"
+			local LOCAL__balance="$(printf "%.5f" "${LOCAL__balance}")"
+		done <<< "${GLOBAL__result}"
+
 		# check if we found a pos block (staking).
 		galilel_bot__curl_wallet \
 			"${LOCAL__ip}" \
@@ -275,74 +291,70 @@ function galilel_bot__notification_wallet() {
 		# loop through result.
 		while read LOCAL__line ; do
 
-			# get transaction information.
-			local LOCAL__generated="$(@JSHON@ -Q -e result -e generated -u <<< "${LOCAL__line}")"
-			local LOCAL__amount="$(@JSHON@ -Q -e result -e amount -u <<< "${LOCAL__line}")"
-			local LOCAL__fee="$(@JSHON@ -Q -e result -e fee -u <<< "${LOCAL__line}")"
+			# get transaction information (transfer).
+			local LOCAL__confirmations="$(@JSHON@ -Q -e result -e confirmations -u <<< "${LOCAL__line}")"
 
-			# check if the block was generated.
-			[ "${LOCAL__generated}" == "true" ] && {
-				echo "LOCAL__amount: ${LOCAL__amount}"
-				echo "LOCAL__fee: ${LOCAL__fee}"
+			# check if coins have been transferred.
+			[ "${LOCAL__confirmations}" -gt "0" ] && {
 
-				# calculate reward.
-				local LOCAL__reward="$(echo "${LOCAL__fee}" + "${LOCAL__amount}" | @BC@)"
-				local LOCAL__reward="$(printf "%.5f" "${LOCAL__reward}")"
+				# get wallet address.
+				local LOCAL__wallet="$(@JSHON@ -Q -e result -e details -a -e address -u <<< "${LOCAL__line}")"
 
-				# get donation wallet balance.
-				galilel_bot__curl_wallet \
-					"${LOCAL__ip}" \
-					"${LOCAL__port}" \
-					"${LOCAL__username}" \
-					"${LOCAL__password}" \
-					'{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "getbalance", "params" : [ ] }' || return "${?}"
+				# check if it is configured wallet address.
+				[ "${LOCAL__address}" == "${LOCAL__wallet}" ] && {
 
-				# loop through result.
-				while read LOCAL__line ; do
-
-					# get balance information.
-					local LOCAL__balance="$(@JSHON@ -Q -e result -u <<< "${LOCAL__line}")"
-					local LOCAL__balance="$(printf "%.5f" "${LOCAL__balance}")"
+					# get amount.
+					local LOCAL__amount="$(@JSHON@ -Q -e result -e details -a -e amount -u <<< "${LOCAL__line}")"
 
 					# check if in test mode.
 					[ "${GLOBAL__parameter_test}" == "enabled" ] && {
-						galilel_bot__printf INFO "Received staking reward **'"${LOCAL__reward}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'"
+						galilel_bot__printf INFO "Received donation of **'"${LOCAL__amount}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'"
 					}
 
 					# check if in production mode.
 					[ "${GLOBAL__parameter_test}" == "disabled" ] && {
-						galilel_bot__printf FILE "Received staking reward **'"${LOCAL__reward}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'"
+						galilel_bot__printf FILE "Received donation of **'"${LOCAL__amount}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'"
 
 						# push block notification to discord.
 						galilel_bot__curl_discord \
 							"https://discordapp.com/api/webhooks" \
 							"${GLOBAL__parameter_wallet_webhook_id}" \
 							"${GLOBAL__parameter_wallet_webhook_token}" \
-							'Received staking reward **'"${LOCAL__reward}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'' || return "${?}"
+							'Received donation of **'"${LOCAL__amount}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'' || return "${?}"
 					}
-				done <<< "${GLOBAL__result}"
+				}
+			}
+
+			# get transaction information (reward).
+			local LOCAL__generated="$(@JSHON@ -Q -e result -e generated -u <<< "${LOCAL__line}")"
+			local LOCAL__amount="$(@JSHON@ -Q -e result -e amount -u <<< "${LOCAL__line}")"
+			local LOCAL__fee="$(@JSHON@ -Q -e result -e fee -u <<< "${LOCAL__line}")"
+
+			# check if the block was generated.
+			[ "${LOCAL__generated}" == "true" ] && {
+
+				# calculate reward.
+				local LOCAL__reward="$(echo "${LOCAL__fee}" + "${LOCAL__amount}" | @BC@)"
+				local LOCAL__reward="$(printf "%.5f" "${LOCAL__reward}")"
+
+				# check if in test mode.
+				[ "${GLOBAL__parameter_test}" == "enabled" ] && {
+					galilel_bot__printf INFO "Received staking reward **'"${LOCAL__reward}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'"
+				}
+
+				# check if in production mode.
+				[ "${GLOBAL__parameter_test}" == "disabled" ] && {
+					galilel_bot__printf FILE "Received staking reward **'"${LOCAL__reward}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'"
+
+					# push block notification to discord.
+					galilel_bot__curl_discord \
+						"https://discordapp.com/api/webhooks" \
+						"${GLOBAL__parameter_wallet_webhook_id}" \
+						"${GLOBAL__parameter_wallet_webhook_token}" \
+						'Received staking reward **'"${LOCAL__reward}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'' || return "${?}"
+				}
 			}
 		done <<< "${GLOBAL__result}"
-
-		# check pipe status of curl command.
-		case "${PIPESTATUS[0]}" in
-			7)
-
-				# connection error.
-				galilel_bot__printf INFO "${GALILEL_BOT_PROCESS}: failed to connect to galilel RPC wallet"
-
-				# return error.
-				return 7
-			;;
-			22)
-
-				# http protocol error.
-				galilel_bot__printf INFO "${GALILEL_BOT_PROCESS}: failed to retrieve url from RPC wallet"
-
-				# return error.
-				return 22
-			;;
-		esac
 	done
 
 	# if no error was found, return zero.
