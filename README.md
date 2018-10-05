@@ -70,7 +70,7 @@ If you need to specify another logfile, please do in `/etc/galilel/galilel-bot.c
 and change the following:
 
 ```
-# notification logfile (disabled with value /dev/null).
+# notification logfile (leave empty to disable).
 LOGFILE="/var/log/galilel/galilel-bot.log"
 ```
 

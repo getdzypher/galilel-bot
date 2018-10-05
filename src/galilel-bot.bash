@@ -65,10 +65,18 @@ function galilel_bot__printf() {
 					echo -e "${@}"
 				;;
 			esac
-			echo -e "$(@DATE@ '+%b %e %H:%M:%S')" "${HOSTNAME}" "${GALILEL_BOT_PROCESS}[$$]:" "${FUNCNAME[1]##*__}() ${@}" >> "${GLOBAL__parameter_logfile}"
+
+			# check if we should write to logfile.
+			[ -z "${GLOBAL__parameter_logfile}" ] && {
+				echo -e "$(@DATE@ '+%b %e %H:%M:%S')" "${HOSTNAME}" "${GALILEL_BOT_PROCESS}[$$]:" "${FUNCNAME[1]##*__}() ${@}" >> "${GLOBAL__parameter_logfile}"
+			}
 		;;
 		FILE)
-			echo -e "$(@DATE@ '+%b %e %H:%M:%S')" "${HOSTNAME}" "${GALILEL_BOT_PROCESS}[$$]:" "${FUNCNAME[1]##*__}() ${@}" >> "${GLOBAL__parameter_logfile}"
+
+			# check if we should write to logfile.
+			[ -z "${GLOBAL__parameter_logfile}" ] && {
+				echo -e "$(@DATE@ '+%b %e %H:%M:%S')" "${HOSTNAME}" "${GALILEL_BOT_PROCESS}[$$]:" "${FUNCNAME[1]##*__}() ${@}" >> "${GLOBAL__parameter_logfile}"
+			}
 		;;
 	esac
 
@@ -241,15 +249,15 @@ function galilel_bot__init() {
 	source "${GLOBAL__parameter_conffile}"
 
 	# move config options to global variables.
-	GLOBAL__parameter_logfile="${LOGFILE:-/var/log/galilel/galilel-bot.log}"
+	GLOBAL__parameter_logfile="${LOGFILE}"
 	GLOBAL__parameter_configs=("${COIN_CONFIGS[@]}")
 	GLOBAL__parameter_wallet_webhook_id="${DISCORD_WALLET_WEBHOOK_ID}"
 	GLOBAL__parameter_wallet_webhook_token="${DISCORD_WALLET_WEBHOOK_TOKEN}"
 	GLOBAL__parameter_block_webhook_id="${DISCORD_BLOCK_WEBHOOK_ID}"
 	GLOBAL__parameter_block_webhook_token="${DISCORD_BLOCK_WEBHOOK_TOKEN}"
 
-	# check if logfile is writable.
-	[ ! -w "${GLOBAL__parameter_logfile}" ] && {
+	# check if logfile is enabled and writable.
+	[ -n "${GLOBAL__parameter_logfile}" ] && [ ! -w "${GLOBAL__parameter_logfile}" ] && {
 		galilel_bot__printf HELP "${GALILEL_BOT_PROCESS}: logfile ${GLOBAL__parameter_logfile} is not writable"
 
 		# return with error.
