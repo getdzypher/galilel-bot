@@ -35,6 +35,9 @@ declare -g GLOBAL__parameter_wallet_webhook_token
 declare -g GLOBAL__parameter_block_webhook_id
 declare -g GLOBAL__parameter_block_webhook_token
 
+# global result variable.
+declare -g GLOBAL__result
+
 # @_galilel_bot__printf()
 #
 # @_${1}: log level
@@ -132,6 +135,109 @@ function galilel_bot__show_version() {
 	return 2
 }
 
+# @_galilel_bot__curl_discord()
+#
+# @_${1}: discord url
+# @_${2}: webhook id
+# @_${3}: webhook token
+# @_${4}: query
+#
+# this function communicates via curl with discord webservice.
+function galilel_bot__curl_discord() {
+
+	# local variables.
+	local LOCAL__url="${1}"
+	local LOCAL__id="${2}"
+	local LOCAL__token="${3}"
+	local LOCAL__query="${4}"
+
+	GLOBAL__result="$(@CURL@ \
+		--request POST \
+		--max-time 5 \
+		--silent \
+		--fail \
+		--header 'content-type: application/json;' \
+		--data-binary "${LOCAL__query}" \
+		"${LOCAL__url}/${LOCAL__id}/${LOCAL__token}"
+	)"
+
+	# check return status of curl command.
+	case "${?}" in
+		7)
+
+			# connection error.
+			galilel_bot__printf INFO "${GALILEL_BOT_PROCESS}: failed to connect to galilel RPC wallet"
+
+			# return error.
+			return 7
+		;;
+		22)
+
+			# http protocol error.
+			galilel_bot__printf INFO "${GALILEL_BOT_PROCESS}: failed to retrieve url from RPC wallet"
+
+			# return error.
+			return 22
+		;;
+	esac
+
+	# if no error was found, return zero.
+	return 0
+}
+
+# @_galilel_bot__curl_wallet()
+#
+# @_${1}: rpc ip
+# @_${2}: rpc port
+# @_${3}: rpc username
+# @_${4}: rpc password
+# @_${5}: query
+#
+# this function communicates via curl with wallet rpc daemon.
+function galilel_bot__curl_wallet() {
+
+	# local variables.
+	local LOCAL__ip="${1}"
+	local LOCAL__port="${2}"
+	local LOCAL__username="${3}"
+	local LOCAL__password="${4}"
+	local LOCAL__query="${5}"
+
+	GLOBAL__result="$(@CURL@ \
+		--request POST \
+		--max-time 5 \
+		--silent \
+		--fail \
+		--header 'content-type: text/plain;' \
+		--data-binary "${LOCAL__query}" \
+		--user "${LOCAL__username}:${LOCAL__password}" \
+		"http://${LOCAL__ip}:${LOCAL__port}/"
+	)"
+
+	# check return status of curl command.
+	case "${?}" in
+		7)
+
+			# connection error.
+			galilel_bot__printf INFO "${GALILEL_BOT_PROCESS}: failed to connect to galilel RPC wallet"
+
+			# return error.
+			return 7
+		;;
+		22)
+
+			# http protocol error.
+			galilel_bot__printf INFO "${GALILEL_BOT_PROCESS}: failed to retrieve url from RPC wallet"
+
+			# return error.
+			return 22
+		;;
+	esac
+
+	# if no error was found, return zero.
+	return 0
+}
+
 # @_galilel_bot__notification_wallet()
 #
 # @_${1}: coin ticker
@@ -159,16 +265,15 @@ function galilel_bot__notification_wallet() {
 		}
 
 		# check if we found a pos block (staking).
-		@CURL@ \
-			--request POST \
-			--max-time 5 \
-			--silent \
-			--fail \
-			--header 'content-type: text/plain;' \
-			--data-binary '{ "jsonrpc" : "1.0", "id" : "curltest", "method" : "gettransaction", "params" : [ "'"${LOCAL__transactionid}"'" ] }' \
-			--user "${LOCAL__username}:${LOCAL__password}" \
-			"http://${LOCAL__ip}:${LOCAL__port}/" |
-		while read LOCAL__line ; do
+		galilel_bot__curl_wallet \
+			"${LOCAL__ip}" \
+			"${LOCAL__port}" \
+			"${LOCAL__username}" \
+			"${LOCAL__password}" \
+			'{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "gettransaction", "params" : [ "'"${LOCAL__transactionid}"'" ] }' || return "${?}"
+
+		# loop through result.
+		echo -e "${GLOBAL__result}" | while read LOCAL__line ; do
 
 			# get transaction information.
 			local LOCAL__generated="$(@JSHON@ -Q -e result -e generated -u <<< "${LOCAL__line}")"
@@ -185,16 +290,15 @@ function galilel_bot__notification_wallet() {
 				local LOCAL__reward="$(printf "%.5f" "${LOCAL__reward}")"
 
 				# get donation wallet balance.
-				@CURL@ \
-					--request POST \
-					--max-time 5 \
-					--silent \
-					--fail \
-					--header 'content-type: text/plain;' \
-					--data-binary '{ "jsonrpc" : "1.0", "id" : "curltest", "method" : "getbalance", "params" : [ ] }' \
-					--user "${LOCAL__username}:${LOCAL__password}" \
-					"http://${LOCAL__ip}:${LOCAL__port}/" |
-				while read LOCAL__line ; do
+				galilel_bot__curl_wallet \
+					"${LOCAL__ip}" \
+					"${LOCAL__port}" \
+					"${LOCAL__username}" \
+					"${LOCAL__password}" \
+					'{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "getbalance", "params" : [ ] }' || return "${?}"
+
+				# loop through result.
+				echo -e "${GLOBAL__result}" | while read LOCAL__line ; do
 
 					# get balance information.
 					local LOCAL__balance="$(@JSHON@ -Q -e result -u <<< "${LOCAL__line}")"
@@ -210,36 +314,13 @@ function galilel_bot__notification_wallet() {
 						galilel_bot__printf FILE "Received staking reward **'"${LOCAL__reward}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'"
 
 						# push block notification to discord.
-						/usr/bin/curl \
-							--request POST \
-							--max-time 5 \
-							--silent \
-							--fail \
-							--header 'content-Type: application/json' \
-							--data-binary '{ "content" : "Received staking reward **'"${LOCAL__reward}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'" }' \
-							"https://discordapp.com/api/webhooks/${GLOBAL__parameter_wallet_webhook_id}/${GLOBAL__parameter_wallet_webhook_token}"
+						galilel_bot__curl_discord \
+							"https://discordapp.com/api/webhooks" \
+							"${GLOBAL__parameter_wallet_webhook_id}" \
+							"${GLOBAL__parameter_wallet_webhook_token}" \
+							'Received staking reward **'"${LOCAL__reward}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'' || return "${?}"
 					}
 				done
-
-				# check pipe status of curl command.
-				case "${PIPESTATUS[0]}" in
-					7)
-
-						# connection error.
-						galilel_bot__printf INFO "${GALILEL_BOT_PROCESS}: failed to connect to galilel RPC wallet"
-
-						# return error.
-						return 7
-					;;
-					22)
-
-						# http protocol error.
-						galilel_bot__printf INFO "${GALILEL_BOT_PROCESS}: failed to retrieve url from RPC wallet"
-
-						# return error.
-						return 22
-					;;
-				esac
 			}
 		done
 
@@ -295,16 +376,15 @@ function galilel_bot__notification_block() {
 		}
 
 		# fetch block information.
-		@CURL@ \
-			--request POST \
-			--max-time 5 \
-			--silent \
-			--fail \
-			--header 'content-type: text/plain;' \
-			--data-binary '{ "jsonrpc" : "1.0", "id" : "curltest", "method" : "getblock", "params" : [ "'"${LOCAL__blockhash}"'" ] }' \
-			--user "${LOCAL__username}:${LOCAL__password}" \
-			"http://${LOCAL__ip}:${LOCAL__port}/" |
-		while read LOCAL__line ; do
+		galilel_bot__curl_wallet \
+			"${LOCAL__ip}" \
+			"${LOCAL__port}" \
+			"${LOCAL__username}" \
+			"${LOCAL__password}" \
+			'{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "getblock", "params" : [ "'"${LOCAL__blockhash}"'" ] }' || return "${?}"
+
+		# loop through result.
+		echo -e "${GLOBAL__result}" | while read LOCAL__line ; do
 
 			# get block information.
 			local LOCAL__height="$(@JSHON@ -Q -e result -e height -u <<< "${LOCAL__line}")"
@@ -327,36 +407,13 @@ function galilel_bot__notification_block() {
 				galilel_bot__printf FILE "New block **'"${LOCAL__height}"'** at **'"${LOCAL__date}"'** with difficulty **'"${LOCAL__difficulty}"'**"
 
 				# push block notification to discord.
-				/usr/bin/curl \
-					--request POST \
-					--max-time 5 \
-					--silent \
-					--fail \
-					--header 'content-Type: application/json' \
-					--data-binary '{ "content" : "New block **'"${LOCAL__height}"'** at **'"${LOCAL__date}"'** with difficulty **'"${LOCAL__difficulty}"'**" }' \
-					"https://discordapp.com/api/webhooks/${GLOBAL__parameter_block_webhook_id}/${GLOBAL__parameter_block_webhook_token}"
+				galilel_bot__curl_discord \
+					"https://discordapp.com/api/webhooks" \
+					"${GLOBAL__parameter_block_webhook_id}" \
+					"${GLOBAL__parameter_wallet_webhook_token}" \
+					'New block **'"${LOCAL__height}"'** at **'"${LOCAL__date}"'** with difficulty **'"${LOCAL__difficulty}"'**' || return "${?}"
 			}
 		done
-
-		# check pipe status of curl command.
-		case "${PIPESTATUS[0]}" in
-			7)
-
-				# connection error.
-				galilel_bot__printf INFO "${GALILEL_BOT_PROCESS}: failed to connect to galilel RPC wallet"
-
-				# return error.
-				return 7
-			;;
-			22)
-
-				# http protocol error.
-				galilel_bot__printf INFO "${GALILEL_BOT_PROCESS}: failed to retrieve url from RPC wallet"
-
-				# return error.
-				return 22
-			;;
-		esac
 	done
 
 	# if no error was found, return zero.
