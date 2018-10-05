@@ -153,7 +153,7 @@ function galilel_bot__notification_wallet() {
 function galilel_bot__notification_block() {
 
 	# local variables.
-	local LOCAL__ticker="${1}"
+	local LOCAL__coin="${1}"
 	local LOCAL__blockhash="${2}"
 
 	# loop through the configuration array.
@@ -162,6 +162,13 @@ function galilel_bot__notification_block() {
 
 		# read data into variables.
 		IFS=':' read LOCAL__ticker LOCAL__username LOCAL__password LOCAL__ip LOCAL__port LOCAL__address <<< "${GLOBAL__parameter_configs[${LOCAL__index}]}"
+
+		# check if correct ticker.
+		[ "${LOCAL__coin}" != "${LOCAL__ticker}" ] && {
+
+			# wrong ticker, so continue.
+			continue
+		}
 
 		# fetch block information.
 		@CURL@ \
