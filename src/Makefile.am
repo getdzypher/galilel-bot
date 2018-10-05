@@ -12,6 +12,7 @@ EXTRA_DIST = $(galilel_bot_DATA)
 # symlink main script to binary search path (requires uninstall-hook).
 install-data-hook:
 	$(sedpath) 's,@BASH@,${bashpath},g' -i $(DESTDIR)${galilel_botdir}/galilel-bot.bash
+	$(sedpath) 's,@BC@,${bcpath},g' -i $(DESTDIR)${galilel_botdir}/galilel-bot.bash
 	$(sedpath) 's,@CURL@,${curlpath},g' -i $(DESTDIR)${galilel_botdir}/galilel-bot.bash
 	$(sedpath) 's,@DATE@,${datepath},g' -i $(DESTDIR)${galilel_botdir}/galilel-bot.bash
 	$(sedpath) 's,@GALILEL_BOT_AUTHOR@,$(PACKAGE_BUGREPORT),g' -i $(DESTDIR)${galilel_botdir}/galilel-bot.bash

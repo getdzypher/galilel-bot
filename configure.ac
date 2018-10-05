@@ -16,6 +16,10 @@ AC_PATH_PROG([bashpath], [bash], [no])
 if test "$bashpath" = "no"; then
 	AC_MSG_ERROR([bash binary is required])
 fi
+AC_PATH_PROG([bcpath], [bc], [no])
+if test "$bcpath" = "no"; then
+	AC_MSG_ERROR([bc binary is required])
+fi
 AC_PATH_PROG([chmodpath], [chmod], [no])
 if test "$chmodpath" = "no"; then
 	AC_MSG_ERROR([chmod binary is required])

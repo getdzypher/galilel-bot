@@ -140,6 +140,130 @@ function galilel_bot__show_version() {
 # this function sends message to discord on monitored wallet address changes.
 function galilel_bot__notification_wallet() {
 
+	# local variables.
+	local LOCAL__coin="${1}"
+	local LOCAL__transactionid="${2}"
+
+	# loop through the configuration array.
+	local LOCAL__index
+	for (( LOCAL__index = 0; LOCAL__index < "${#GLOBAL__parameter_configs[@]}" ; LOCAL__index++ )) ; do
+
+		# read data into variables.
+		IFS=':' read LOCAL__ticker LOCAL__username LOCAL__password LOCAL__ip LOCAL__port LOCAL__address <<< "${GLOBAL__parameter_configs[${LOCAL__index}]}"
+
+		# check if correct ticker.
+		[ "${LOCAL__coin}" != "${LOCAL__ticker}" ] && {
+
+			# wrong ticker, so continue.
+			continue
+		}
+
+		# check if we found a pos block (staking).
+		@CURL@ \
+			--request POST \
+			--max-time 5 \
+			--silent \
+			--fail \
+			--header 'content-type: text/plain;' \
+			--data-binary '{ "jsonrpc" : "1.0", "id" : "curltest", "method" : "gettransaction", "params" : [ "'"${LOCAL__transactionid}"'" ] }' \
+			--user "${LOCAL__username}:${LOCAL__password}" \
+			"http://${LOCAL__ip}:${LOCAL__port}/" |
+		while read LOCAL__line ; do
+
+			# get transaction information.
+			local LOCAL__generated="$(@JSHON@ -Q -e result -e generated -u <<< "${LOCAL__line}")"
+			local LOCAL__amount="$(@JSHON@ -Q -e result -e amount -u <<< "${LOCAL__line}")"
+			local LOCAL__fee="$(@JSHON@ -Q -e result -e fee -u <<< "${LOCAL__line}")"
+
+			# check if the block was generated.
+			[ "${LOCAL__generated}" == "true" ] && {
+				echo "LOCAL__amount: ${LOCAL__amount}"
+				echo "LOCAL__fee: ${LOCAL__fee}"
+
+				# calculate reward.
+				local LOCAL__reward="$(echo "${LOCAL__fee}" + "${LOCAL__amount}" | @BC@)"
+				local LOCAL__reward="$(printf "%.5f" "${LOCAL__reward}")"
+
+				# get donation wallet balance.
+				@CURL@ \
+					--request POST \
+					--max-time 5 \
+					--silent \
+					--fail \
+					--header 'content-type: text/plain;' \
+					--data-binary '{ "jsonrpc" : "1.0", "id" : "curltest", "method" : "getbalance", "params" : [ ] }' \
+					--user "${LOCAL__username}:${LOCAL__password}" \
+					"http://${LOCAL__ip}:${LOCAL__port}/" |
+				while read LOCAL__line ; do
+
+					# get balance information.
+					local LOCAL__balance="$(@JSHON@ -Q -e result -u <<< "${LOCAL__line}")"
+					local LOCAL__balance="$(printf "%.5f" "${LOCAL__balance}")"
+
+					# check if in test mode.
+					[ "${GLOBAL__parameter_test}" == "enabled" ] && {
+						galilel_bot__printf INFO "Received staking reward **'"${LOCAL__reward}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'"
+					}
+
+					# check if in production mode.
+					[ "${GLOBAL__parameter_test}" == "disabled" ] && {
+						galilel_bot__printf FILE "Received staking reward **'"${LOCAL__reward}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'"
+
+						# push block notification to discord.
+						/usr/bin/curl \
+							--request POST \
+							--max-time 5 \
+							--silent \
+							--fail \
+							--header 'content-Type: application/json' \
+							--data-binary '{ "content" : "Received staking reward **'"${LOCAL__reward}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'" }' \
+							"https://discordapp.com/api/webhooks/${GLOBAL__parameter_wallet_webhook_id}/${GLOBAL__parameter_wallet_webhook_token}"
+					}
+				done
+
+				# check pipe status of curl command.
+				case "${PIPESTATUS[0]}" in
+					7)
+
+						# connection error.
+						galilel_bot__printf INFO "${GALILEL_BOT_PROCESS}: failed to connect to galilel RPC wallet"
+
+						# return error.
+						return 7
+					;;
+					22)
+
+						# http protocol error.
+						galilel_bot__printf INFO "${GALILEL_BOT_PROCESS}: failed to retrieve url from RPC wallet"
+
+						# return error.
+						return 22
+					;;
+				esac
+			}
+		done
+
+		# check pipe status of curl command.
+		case "${PIPESTATUS[0]}" in
+			7)
+
+				# connection error.
+				galilel_bot__printf INFO "${GALILEL_BOT_PROCESS}: failed to connect to galilel RPC wallet"
+
+				# return error.
+				return 7
+			;;
+			22)
+
+				# http protocol error.
+				galilel_bot__printf INFO "${GALILEL_BOT_PROCESS}: failed to retrieve url from RPC wallet"
+
+				# return error.
+				return 22
+			;;
+		esac
+	done
+
 	# if no error was found, return zero.
 	return 0
 }
@@ -209,7 +333,7 @@ function galilel_bot__notification_block() {
 					--silent \
 					--fail \
 					--header 'content-Type: application/json' \
-					--data-binary '{ "content" : "New block **'"${LOCAL__height}"'** at **'"$(/usr/bin/date --date "@${LOCAL__time}")"'** with difficulty **'"$(printf "%.2f" "${LOCAL__difficulty}")"'**" }' \
+					--data-binary '{ "content" : "New block **'"${LOCAL__height}"'** at **'"${LOCAL__date}"'** with difficulty **'"${LOCAL__difficulty}"'**" }' \
 					"https://discordapp.com/api/webhooks/${GLOBAL__parameter_block_webhook_id}/${GLOBAL__parameter_block_webhook_token}"
 			}
 		done

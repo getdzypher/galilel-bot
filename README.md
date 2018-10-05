@@ -103,7 +103,10 @@ $> galilel-bot --test --notify-block GALI 570d66289f41f835cbc5a6ba521ad007ab9958
 New block **'189685'** at **'Thu Oct 4 15:45:48 CEST 2018'** with difficulty **'50829.65'**
 ```
 
-The output is the raw text with the discord markdown characters.
+The output is the raw text with the discord markdown characters. If the
+`--notify-wallet` output is empty, nothing was received with the given
+transaction id for the monitored wallet address (neither a transaction nor a
+reward).
 
 # Help
 
