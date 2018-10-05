@@ -1,6 +1,6 @@
 #!@BASH@
 #
-# galilel-bot -- discord notification block for galilel coin daemon.
+# galilel-bot -- discord notification bot for galilel coin daemon.
 #
 # Copyright (c) 2018 Maik Broemme <mbroemme@libmpq.org>
 #
@@ -22,10 +22,23 @@ export GALILEL_BOT_PROCESS="$(@BASENAME@ "${0}")"
 export GALILEL_BOT_VERSION="@GALILEL_BOT_VERSION@"
 export GALILEL_BOT_AUTHOR="@GALILEL_BOT_AUTHOR@"
 
+# global variables with sane defaults.
+declare -g GLOBAL__parameter_debug="disabled"
+declare -g GLOBAL__parameter_test="disabled"
+declare -g GLOBAL__parameter_conffile="@SYSCONFDIR@/galilel/galilel-bot.conf"
+
+# global variables filled from configuration file.
+declare -g GLOBAL__parameter_logfile
+declare -a GLOBAL__parameter_configs
+declare -g GLOBAL__parameter_wallet_webhook_id
+declare -g GLOBAL__parameter_wallet_webhook_token
+declare -g GLOBAL__parameter_block_webhook_id
+declare -g GLOBAL__parameter_block_webhook_token
+
 # @_galilel_bot__printf()
 #
 # @_${1}: log level
-# @_${2}: text string
+# @_${@}: text string(s)
 #
 # this function shows something on stdout and logs into a file.
 function galilel_bot__printf() {
@@ -74,10 +87,12 @@ function galilel_bot__show_help() {
 	galilel_bot__printf HELP ""
 	galilel_bot__printf HELP "Common arguments:"
 	galilel_bot__printf HELP ""
-	galilel_bot__printf HELP "  -h, --help            shows this help screen"
-	galilel_bot__printf HELP "  -v, --version         shows the version information"
-	galilel_bot__printf HELP "      --debug           shows debug information"
-	galilel_bot__printf HELP "      --test            shows notification on console rather than in discord"
+	galilel_bot__printf HELP "  -h, --help      show this help screen"
+	galilel_bot__printf HELP "  -v, --version   show version  and exit"
+	galilel_bot__printf HELP "      --conf      <filename>"
+	galilel_bot__printf HELP "                  set configuration file (default: ${GLOBAL__parameter_conffile})"
+	galilel_bot__printf HELP "      --debug     set debug to enabled"
+	galilel_bot__printf HELP "      --test      test notification on console rather than in discord"
 	galilel_bot__printf HELP ""
 	galilel_bot__printf HELP "Notification arguments:"
 	galilel_bot__printf HELP ""
@@ -197,7 +212,7 @@ function galilel_bot__notification_block() {
 			22)
 
 				# http protocol error.
-				galilel_bot__printf INFO "${GALILEL_BOT_PROCESS}: requested url was not found or returned another error"
+				galilel_bot__printf INFO "${GALILEL_BOT_PROCESS}: failed to retrieve url from RPC wallet"
 
 				# return error.
 				return 22
@@ -214,6 +229,25 @@ function galilel_bot__notification_block() {
 # this function initializes the application and does various permission checks.
 function galilel_bot__init() {
 
+	# check if configuration file is readable.
+	[ ! -r "${GLOBAL__parameter_conffile}" ] && {
+		galilel_bot__printf HELP "${GALILEL_BOT_PROCESS}: configuration file ${GLOBAL__parameter_conffile} is not readable"
+
+		# exit with error.
+		exit 1
+	}
+
+	# load configuration file.
+	source "${GLOBAL__parameter_conffile}"
+
+	# move config options to global variables.
+	GLOBAL__parameter_logfile="${LOGFILE:-/var/log/galilel/galilel-bot.log}"
+	GLOBAL__parameter_configs=("${COIN_CONFIGS[@]}")
+	GLOBAL__parameter_wallet_webhook_id="${DISCORD_WALLET_WEBHOOK_ID}"
+	GLOBAL__parameter_wallet_webhook_token="${DISCORD_WALLET_WEBHOOK_TOKEN}"
+	GLOBAL__parameter_block_webhook_id="${DISCORD_BLOCK_WEBHOOK_ID}"
+	GLOBAL__parameter_block_webhook_token="${DISCORD_BLOCK_WEBHOOK_TOKEN}"
+
 	# check if logfile is writable.
 	[ ! -w "${GLOBAL__parameter_logfile}" ] && {
 		galilel_bot__printf HELP "${GALILEL_BOT_PROCESS}: logfile ${GLOBAL__parameter_logfile} is not writable"
@@ -226,13 +260,18 @@ function galilel_bot__init() {
 	return 0
 }
 
-# @_galilel_bot__get_switches()
+# @_galilel_bot__main()
 #
-# this function parse the switches of the command line.
-function galilel_bot__get_switches() {
+# @_${@}: command line parameters.
+#
+# this function parse the command line and initializes the bot.
+function galilel_bot__main() {
 
-	# first check if no parameter was given.
-	[ "${#}" == "0" ] && {
+	# local variables.
+	local -a LOCAL__parameters=("${@}")
+
+	# check if no parameter was given.
+	[ "${#LOCAL__parameters[@]}" == "0" ] && {
 		galilel_bot__printf HELP "${GALILEL_BOT_PROCESS}: no option given"
 		galilel_bot__printf HELP "Try \`${GALILEL_BOT_PROCESS} --help' for more information."
 
@@ -241,11 +280,11 @@ function galilel_bot__get_switches() {
 	}
 
 	# first parse command line for switches for help and version.
-	for LOOP__argument in "${@}" ; do
-		case "${LOOP__argument}" in
+	for LOOP__index in "${!LOCAL__parameters[@]}" ; do
+		case "${LOCAL__parameters[${LOOP__index}]}" in
 			-h|--help)
 				galilel_bot__show_help || return "${?}"
-			;;      
+			;;
 			-v|--version)
 				galilel_bot__show_version || return "${?}"
 			;;
@@ -255,16 +294,36 @@ function galilel_bot__get_switches() {
 		esac
 	done
 
-	# second parse command line for flags.
-	for LOOP__argument in "${@}" ; do
-		case "${LOOP__argument}" in
-			--debug)
-				declare -g GLOBAL__parameter_debug="enabled"
-				shift
-			;;
-			--test)
-				declare -g GLOBAL__parameter_test="enabled"
-				shift
+	# second parse command line for custom config file.
+	for LOOP__index in "${!LOCAL__parameters[@]}" ; do
+		case "${LOCAL__parameters[${LOOP__index}]}" in
+			--conf)
+
+				# variables.
+				local LOCAL__parameter_0="${LOCAL__parameters[${LOOP__index}]}"
+				local LOCAL__parameter_1="${LOCAL__parameters[$(( ${LOOP__index} + 1))]}"
+
+				# check if we miss some parameter.
+				[ -z "${LOCAL__parameter_1}" ] && {
+
+					# show the help for the missing parameter.
+					galilel_bot__printf HELP "${GALILEL_BOT_PROCESS}: option \`${LOCAL__parameter_0}' requires 1 argument"
+					galilel_bot__printf HELP "Try \`${GALILEL_BOT_PROCESS} --help' for more information."
+
+					# return if we missed some parameter.
+					return 1
+				}
+
+				# unset array items.
+				unset LOCAL__parameters[${LOOP__index}]
+				unset LOCAL__parameters[$(( ${LOOP__index} + 1))]
+
+				# put custom configuration file in global variable.
+				declare -g GLOBAL__parameter_conffile="${LOCAL__parameter_1}"
+
+				# unset switch variables.
+				unset LOCAL__parameter_0
+				unset LOCAL__parameter_1
 			;;
 			*)
 				continue
@@ -272,97 +331,104 @@ function galilel_bot__get_switches() {
 		esac
 	done
 
+	galilel_bot__init || return "${?}"
+
 	# third parse command line for main switches.
-	while [ "${#}" -gt "0" ] ; do
-		case "${1}" in
+	for LOOP__index in "${!LOCAL__parameters[@]}" ; do
+		case "${LOCAL__parameters[${LOOP__index}]}" in
+			--debug)
+				declare -g GLOBAL__parameter_debug="enabled"
+				unset LOCAL__parameters[${LOOP__index}]
+			;;
+			--test)
+				declare -g GLOBAL__parameter_test="enabled"
+				unset LOCAL__parameters[${LOOP__index}]
+			;;
 			--notify-wallet)
 
+				# variables.
+				local LOCAL__parameter_0="${LOCAL__parameters[${LOOP__index}]}"
+				local LOCAL__parameter_1="${LOCAL__parameters[$(( ${LOOP__index} + 1))]}"
+				local LOCAL__parameter_2="${LOCAL__parameters[$(( ${LOOP__index} + 2))]}"
+
 				# check if we miss some parameter.
-				[ -z "${3}" ] && {
+				[ -z "${LOCAL__parameter_2}" ] && {
 
 					# show the help for the missing parameter.
-					galilel_bot__printf HELP "${GALILEL_BOT_PROCESS}: option \`${1}' requires 2 arguments"
+					galilel_bot__printf HELP "${GALILEL_BOT_PROCESS}: option \`${LOCAL__parameter_0}' requires 2 arguments"
 					galilel_bot__printf HELP "Try \`${GALILEL_BOT_PROCESS} --help' for more information."
 
 					# return if we missed some parameter.
 					return 1
 				}
 
-				# wallet notification.
-				galilel_bot__notification_wallet "${2}" "${3}" || return "${?}"
+				# unset array items.
+				unset LOCAL__parameters[${LOOP__index}]
+				unset LOCAL__parameters[$(( ${LOOP__index} + 1))]
+				unset LOCAL__parameters[$(( ${LOOP__index} + 2))]
 
-				# clear variables.
-				shift 3
+				# wallet notification.
+				galilel_bot__notification_wallet "${LOCAL__parameter_1}" "${LOCAL__parameter_2}" || return "${?}"
+
+				# unset switch variables.
+				unset LOCAL__parameter_0
+				unset LOCAL__parameter_1
+				unset LOCAL__parameter_2
 			;;
 			--notify-block)
 
+				# variables.
+				local LOCAL__parameter_0="${LOCAL__parameters[${LOOP__index}]}"
+				local LOCAL__parameter_1="${LOCAL__parameters[$(( ${LOOP__index} + 1))]}"
+				local LOCAL__parameter_2="${LOCAL__parameters[$(( ${LOOP__index} + 2))]}"
+
 				# check if we miss some parameter.
-				[ -z "${3}" ] && {
+				[ -z "${LOCAL__parameter_2}" ] && {
 
 					# show the help for the missing parameter.
-					galilel_bot__printf HELP "${GALILEL_BOT_PROCESS}: option \`${1}' requires 2 arguments"
+					galilel_bot__printf HELP "${GALILEL_BOT_PROCESS}: option \`${LOCAL__parameter_0}' requires 2 arguments"
 					galilel_bot__printf HELP "Try \`${GALILEL_BOT_PROCESS} --help' for more information."
 
 					# return if we missed some parameter.
 					return 1
 				}
 
-				# wallet notification.
-				galilel_bot__notification_block "${2}" "${3}" || return "${?}"
+				# unset array items.
+				unset LOCAL__parameters[${LOOP__index}]
+				unset LOCAL__parameters[$(( ${LOOP__index} + 1))]
+				unset LOCAL__parameters[$(( ${LOOP__index} + 2))]
 
-				# clear variables.
-				shift 3
+				# wallet notification.
+				galilel_bot__notification_block "${LOCAL__parameter_1}" "${LOCAL__parameter_2}" || return "${?}"
+
+				# unset switch variables.
+				unset LOCAL__parameter_0
+				unset LOCAL__parameter_1
+				unset LOCAL__parameter_2
 			;;
 			*)
-
-				# show the help for an unknown option.
-				galilel_bot__printf HELP "${GALILEL_BOT_PROCESS}: unrecognized option \`${1}'"
-				galilel_bot__printf HELP "Try \`${GALILEL_BOT_PROCESS} --help' for more information."
-
-				# return if we found some unknown option.
-				return 1
-
-				# clear variables.
-				shift
+				continue
 			;;
 		esac
-
-		# skip to next parameter.
-		shift
 	done
+
+	# check if unprocessed parameters are left..
+	[ "${#LOCAL__parameters[@]}" != "0" ] && {
+
+		# show the help for an unknown option.
+		galilel_bot__printf HELP "${GALILEL_BOT_PROCESS}: unrecognized option \`${LOCAL__parameters[${LOOP__index}]}'"
+		galilel_bot__printf HELP "Try \`${GALILEL_BOT_PROCESS} --help' for more information."
+
+		# return if we found some unknown option.
+		return 1
+	}
 
 	# if no error was found, return zero.
 	return 0
 }
 
-# check if configuration file is readable.
-[ ! -r "@SYSCONFDIR@/galilel/galilel-bot.conf" ] && {
-	galilel_bot__printf HELP "${GALILEL_BOT_PROCESS}: configuration file @SYSCONFDIR@/galilel/galilel-bot.conf is not readable"
-
-	# exit with error.
-	exit 1
-}
-
-# load configuration file.
-source "@SYSCONFDIR@/galilel/galilel-bot.conf"
-
-# global variables with sane defaults.
-declare -g GLOBAL__parameter_debug="disabled"
-declare -g GLOBAL__parameter_test="disabled"
-
-# move config options to global variables.
-declare -g GLOBAL__parameter_logfile="${LOGFILE:-/var/log/galilel/galilel-bot.log}"
-declare -a GLOBAL__parameter_configs=("${COIN_CONFIGS[@]}")
-declare -g GLOBAL__parameter_wallet_webhook_id="${DISCORD_WALLET_WEBHOOK_ID}"
-declare -g GLOBAL__parameter_wallet_webhook_token="${DISCORD_WALLET_WEBHOOK_TOKEN}"
-declare -g GLOBAL__parameter_block_webhook_id="${DISCORD_BLOCK_WEBHOOK_ID}"
-declare -g GLOBAL__parameter_block_webhook_token="${DISCORD_BLOCK_WEBHOOK_TOKEN}"
-
 # main() starts here.
-{
-	galilel_bot__init &&
-	galilel_bot__get_switches "${@}"
-}
+galilel_bot__main "${@}"
 
 # parse return code.
 case "${?}" in
