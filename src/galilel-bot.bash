@@ -187,21 +187,19 @@ function galilel_bot__curl_discord() {
 
 # @_galilel_bot__curl_wallet()
 #
-# @_${1}: rpc ip
-# @_${2}: rpc port
-# @_${3}: rpc username
-# @_${4}: rpc password
-# @_${5}: query
+# @_${1}: rpc url
+# @_${2}: rpc username
+# @_${3}: rpc password
+# @_${4}: query
 #
 # this function communicates via curl with wallet rpc daemon.
 function galilel_bot__curl_wallet() {
 
 	# local variables.
-	local LOCAL__ip="${1}"
-	local LOCAL__port="${2}"
-	local LOCAL__username="${3}"
-	local LOCAL__password="${4}"
-	local LOCAL__query="${5}"
+	local LOCAL__url="${1}"
+	local LOCAL__username="${2}"
+	local LOCAL__password="${3}"
+	local LOCAL__query="${4}"
 
 	GLOBAL__result="$(@CURL@ \
 		--request POST \
@@ -211,7 +209,7 @@ function galilel_bot__curl_wallet() {
 		--header 'content-type: text/plain;' \
 		--data-binary "${LOCAL__query}" \
 		--user "${LOCAL__username}:${LOCAL__password}" \
-		"http://${LOCAL__ip}:${LOCAL__port}/"
+		"${LOCAL__url}"
 	)"
 
 	# check return status of curl command.
@@ -255,7 +253,7 @@ function galilel_bot__notification_wallet() {
 	for (( LOCAL__index = 0; LOCAL__index < "${#GLOBAL__parameter_configs[@]}" ; LOCAL__index++ )) ; do
 
 		# read data into variables.
-		IFS=':' read LOCAL__ticker LOCAL__username LOCAL__password LOCAL__ip LOCAL__port LOCAL__address <<< "${GLOBAL__parameter_configs[${LOCAL__index}]}"
+		IFS=',' read LOCAL__ticker LOCAL__rpc LOCAL__username LOCAL__password LOCAL__address <<< "${GLOBAL__parameter_configs[${LOCAL__index}]}"
 
 		# check if correct ticker.
 		[ "${LOCAL__coin}" != "${LOCAL__ticker}" ] && {
@@ -266,8 +264,7 @@ function galilel_bot__notification_wallet() {
 
 		# get wallet balance.
 		galilel_bot__curl_wallet \
-			"${LOCAL__ip}" \
-			"${LOCAL__port}" \
+			"${LOCAL__rpc}" \
 			"${LOCAL__username}" \
 			"${LOCAL__password}" \
 			'{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "getbalance", "params" : [ ] }' || return "${?}"
@@ -282,8 +279,7 @@ function galilel_bot__notification_wallet() {
 
 		# check if we found a pos block (staking).
 		galilel_bot__curl_wallet \
-			"${LOCAL__ip}" \
-			"${LOCAL__port}" \
+			"${LOCAL__rpc}" \
 			"${LOCAL__username}" \
 			"${LOCAL__password}" \
 			'{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "gettransaction", "params" : [ "'"${LOCAL__transactionid}"'" ] }' || return "${?}"
@@ -378,7 +374,7 @@ function galilel_bot__notification_block() {
 	for (( LOCAL__index = 0; LOCAL__index < "${#GLOBAL__parameter_configs[@]}" ; LOCAL__index++ )) ; do
 
 		# read data into variables.
-		IFS=':' read LOCAL__ticker LOCAL__username LOCAL__password LOCAL__ip LOCAL__port LOCAL__address <<< "${GLOBAL__parameter_configs[${LOCAL__index}]}"
+		IFS=',' read LOCAL__ticker LOCAL__rpc LOCAL__username LOCAL__password LOCAL__address <<< "${GLOBAL__parameter_configs[${LOCAL__index}]}"
 
 		# check if correct ticker.
 		[ "${LOCAL__coin}" != "${LOCAL__ticker}" ] && {
@@ -389,8 +385,7 @@ function galilel_bot__notification_block() {
 
 		# fetch block information.
 		galilel_bot__curl_wallet \
-			"${LOCAL__ip}" \
-			"${LOCAL__port}" \
+			"${LOCAL__rpc}" \
 			"${LOCAL__username}" \
 			"${LOCAL__password}" \
 			'{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "getblock", "params" : [ "'"${LOCAL__blockhash}"'" ] }' || return "${?}"

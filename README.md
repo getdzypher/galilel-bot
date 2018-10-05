@@ -48,9 +48,9 @@ The configuration takes place in a single file `/etc/galilel/galilel-bot.conf`
 Please change the following options to match your requirements:
 
 ```
-# coin configuration mappings (one per row, format: ticker:rpcuser:rpcpassword:rpcip:rpcport:[address]).
+# coin configuration mappings (one per row, format: ticker,rpcurl,rpcuser,rpcpassword,[address]).
 COIN_CONFIGS=(
-	"GALI:galilel-user:galilel-password:127.0.0.1:36002:UUr5nDmykhun1HWM7mJAqLVeLzoGtx19dX"
+	"GALI,http://127.0.0.1:36002,galilel-user,galilel-password,UUr5nDmykhun1HWM7mJAqLVeLzoGtx19dX"
 )
 
 # discord webhook (wallet notification bot).
