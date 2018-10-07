@@ -81,6 +81,21 @@ logfile can grow significantly over the time, especially if you process a lot
 of transactions from monitored wallet addresses. Therefore it is highly
 recommended to configure logfile rotation. See [logrotate](https://github.com/logrotate/logrotate) for more information.
 
+You can monitor multiple coin daemons from different currencies. Therefore you
+need to change `COIN_CONFIGS` parameter as follows:
+
+```
+COIN_CONFIGS=(
+	"GALI,http://127.0.0.1:36002,galilel-user,galilel-password,UUr5nDmykhun1HWM7mJAqLVeLzoGtx19dX"
+	"BTC,http://127.0.0.1:8332,bitcoin-user,bitcoin-password,13vZmvxWcpMxZPr2gtf4QBS8Q2En6kB3mo"
+	"GIO,http://127.0.0.1:23332,graviocoin-user:graviocoin-password,2MW87snpBrqnWUUeJ15uVkqoqEMZU8GSWLM"
+)
+```
+
+With the example above it is possible to monitor Galilel (GALI), Bitcoin (BTC)
+and Graviocoin (GIO). It allows monitoring of the wallet, blocks on the network
+or both.
+
 # Testing
 
 It is possible to test wallet daemon configuration with announcements to local
