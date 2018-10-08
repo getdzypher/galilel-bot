@@ -3,19 +3,19 @@
 galilel-bot is the bridge between the Galilel coin daemon or any other coin
 daemon and Discord. It uses the internal notification system to forward
 blockchain related messages to any Discord channel. It allows notification
-about received transactions like donations and monitor movement of premine
+about received transactions like donations and monitor movement of wallet
 addresses. The block notification system is able to announce current block
 height if new block is detected in the network. The configuration of the bot is
-independent from the wallet, changes doesn't require wallet daemon restart. It
-supports testing of announcements through local console as well as logging of
-notifications to a custom logfile. It supports multiple coin daemons from
+independent from the wallet and changes doesn't require wallet daemon restart.
+It supports testing of announcements through local console as well as logging
+of notifications to a custom logfile. It supports multiple coin daemons from
 different cryptocurrencies as it uses generic RPC commands.
 
 # Installation
 
 galilel-bot uses GNU autotools build system to simplify cross-platform
 deployment and configuration. In most cases the following instructions will
-work on any Linux distributions:
+work on any Linux distribution:
 
 ```
 git clone https://github.com/Galilel-Project/galilel-bot.git

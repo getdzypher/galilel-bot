@@ -27,4 +27,4 @@ install-data-hook:
 
 # remove symlink from binary search path (created with install-data-hook).
 uninstall-hook:
-	$(rmpath) -f $(DESTDIR)$(bindir)/galilel-bot
+	$(rmpath) -sf $(DESTDIR)$(bindir)/galilel-bot
