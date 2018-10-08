@@ -15,7 +15,7 @@ different cryptocurrencies as it uses generic RPC commands.
 
 galilel-bot uses GNU autotools build system to simplify cross-platform
 deployment and configuration. In most cases the following instructions will
-work on most Linux distributions:
+work on any Linux distributions:
 
 ```
 git clone https://github.com/Galilel-Project/galilel-bot.git
@@ -27,6 +27,8 @@ sh autogen.sh
   --localstatedir=/var
 make install
 ```
+
+For further information how to use GNU autotools, please look at [INSTALL](/INSTALL).
 
 # Discord Configuration
 
