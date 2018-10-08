@@ -10,4 +10,5 @@ galilel_bot_DATA = galilel-bot.conf.example
 EXTRA_DIST = $(galilel_bot_DATA)
 
 install-data-hook:
+	$(sedpath) 's,@LOCALSTATEDIR@,$(localstatedir),g' -i $(DESTDIR)${galilel_botdir}/galilel-bot.conf.example
 	$(chmodpath) 0644 $(DESTDIR)$(galilel_botdir)/galilel-bot.conf.example

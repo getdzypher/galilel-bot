@@ -1,5 +1,5 @@
 # notification logfile (leave empty to disable).
-LOGFILE="/var/log/galilel/galilel-bot.log"
+LOGFILE="@LOCALSTATEDIR@/log/galilel/galilel-bot.log"
 
 # coin configuration mappings (one per row, format: ticker,rpcurl,rpcuser,rpcpassword,[address]).
 COIN_CONFIGS=(
