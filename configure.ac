@@ -1,5 +1,5 @@
 # The autoconf initilization.
-AC_INIT(galilel-bot, 0.2.0, [mbroemme@libmpq.org], [galilel-bot])
+AC_INIT(galilel-bot, 0.2.1, [mbroemme@libmpq.org], [galilel-bot])
 
 # Detect the canonical host and target build environment
 AC_CANONICAL_SYSTEM

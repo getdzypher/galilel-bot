@@ -28,7 +28,8 @@ sh autogen.sh
 make install
 ```
 
-For further information how to use GNU autotools, please look at [INSTALL](/INSTALL).
+For further information how to use GNU autotools, please look at [INSTALL](/INSTALL)
+file.
 
 # Discord Configuration
 

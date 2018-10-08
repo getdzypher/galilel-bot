@@ -316,7 +316,7 @@ function galilel_bot__notification_wallet() {
 							"https://discordapp.com/api/webhooks" \
 							"${GLOBAL__parameter_wallet_webhook_id}" \
 							"${GLOBAL__parameter_wallet_webhook_token}" \
-							'Received donation of **'"${LOCAL__amount}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'' || return "${?}"
+							'{ "content" : "Received donation of **'"${LOCAL__amount}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'" }' || return "${?}"
 					}
 				}
 			}
@@ -347,7 +347,7 @@ function galilel_bot__notification_wallet() {
 						"https://discordapp.com/api/webhooks" \
 						"${GLOBAL__parameter_wallet_webhook_id}" \
 						"${GLOBAL__parameter_wallet_webhook_token}" \
-						'Received staking reward **'"${LOCAL__reward}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'' || return "${?}"
+						'{ "content" : "Received staking reward **'"${LOCAL__reward}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'" }' || return "${?}"
 				}
 			}
 		done <<< "${GLOBAL__result}"
@@ -418,7 +418,7 @@ function galilel_bot__notification_block() {
 					"https://discordapp.com/api/webhooks" \
 					"${GLOBAL__parameter_block_webhook_id}" \
 					"${GLOBAL__parameter_block_webhook_token}" \
-					'New block **'"${LOCAL__height}"'** at **'"${LOCAL__date}"'** with difficulty **'"${LOCAL__difficulty}"'**' || return "${?}"
+					'{ "content" : "New block **'"${LOCAL__height}"'** at **'"${LOCAL__date}"'** with difficulty **'"${LOCAL__difficulty}"'**" }' || return "${?}"
 			}
 		done <<< "${GLOBAL__result}"
 	done
