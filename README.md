@@ -45,6 +45,7 @@ rpcallowip=127.0.0.1
 # Bot Configuration
 
 The configuration takes place in a single file `/etc/galilel/galilel-bot.conf`
+You can copy an example configuration from `/etc/galilel/galilel-bot.conf.example`.
 Please change the following options to match your requirements:
 
 ```
