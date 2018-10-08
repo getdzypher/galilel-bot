@@ -453,17 +453,25 @@ function galilel_bot__init() {
 
 	# check if logfile is enabled, directory and file is writable.
 	[ -n "${GLOBAL__parameter_logfile}" ] && {
-		[ ! -w "${GLOBAL__parameter_logfile%/*}" ] && {
-			galilel_bot__printf HELP "${GALILEL_BOT_PROCESS}: logfile directory ${GLOBAL__parameter_logfile%/*} is not writable"
 
-			# return with error.
-			return 1
+		# check if directory exists, otherwise create it.
+		[ ! -d "${GLOBAL__parameter_logfile%/*}" ] && {
+			@MKDIR@ -p "${GLOBAL__parameter_logfile%/*}" 2> /dev/null || {
+				galilel_bot__printf HELP "${GALILEL_BOT_PROCESS}: logfile directory ${GLOBAL__parameter_logfile%/*} could not be created"
+
+				# return with error.
+				return 1
+			}
 		}
-		[ -e "${GLOBAL__parameter_logfile}" ] && [ ! -w "${GLOBAL__parameter_logfile}" ] && {
-			galilel_bot__printf HELP "${GALILEL_BOT_PROCESS}: logfile ${GLOBAL__parameter_logfile} is not writable"
 
-			# return with error.
-			return 1
+		# check if directory is writable.
+		[ ! -w "${GLOBAL__parameter_logfile%/*}" ] && {
+			@TOUCH@ "${GLOBAL__parameter_logfile}" 2> /dev/null || {
+				galilel_bot__printf HELP "${GALILEL_BOT_PROCESS}: logfile ${GLOBAL__parameter_logfile} could not be created"
+
+				# return with error.
+				return 1
+			}
 		}
 	}
 

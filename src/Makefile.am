@@ -21,6 +21,8 @@ install-data-hook:
 	$(sedpath) 's,@GALILEL_BOT_AUTHOR@,$(PACKAGE_BUGREPORT),g' -i $(DESTDIR)${galilel_botdir}/galilel-bot.bash
 	$(sedpath) 's,@GALILEL_BOT_VERSION@,$(PACKAGE_VERSION),g' -i $(DESTDIR)${galilel_botdir}/galilel-bot.bash
 	$(sedpath) 's,@JSHON@,${jshonpath},g' -i $(DESTDIR)${galilel_botdir}/galilel-bot.bash
+	$(sedpath) 's,@MKDIR@,${mkdirpath},g' -i $(DESTDIR)${galilel_botdir}/galilel-bot.bash
+	$(sedpath) 's,@TOUCH@,${touchpath},g' -i $(DESTDIR)${galilel_botdir}/galilel-bot.bash
 	$(sedpath) 's,@SYSCONFDIR@,${SYSCONFDIR_RELATIVE},g' -i $(DESTDIR)${galilel_botdir}/galilel-bot.bash
 	$(chmodpath) 0755 $(DESTDIR)${galilel_botdir}/galilel-bot.bash
 	$(mkdirpath) -p $(DESTDIR)$(bindir)

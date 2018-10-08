@@ -56,6 +56,10 @@ AC_PATH_PROG([sedpath], [sed], [no])
 if test "$sedpath" = "no"; then
 	AC_MSG_ERROR([sed binary is required])
 fi
+AC_PATH_PROG([touchpath], [touch], [no])
+if test "$touchpath" = "no"; then
+	AC_MSG_ERROR([touch binary is required])
+fi
 
 # Creating files.
 AC_OUTPUT([

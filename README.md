@@ -1,15 +1,15 @@
 # Introduction
 
-galilel-bot is the bridge between the Galilel coin daemon and Discord. It uses
-the Galilel internal notification system to forward blockchain related messages
-to any Discord channel. It allows notification about received transactions like
-donations and monitor movement of premine addresses. The block notification
-system is able to announce current block height if new block is detected in the
-network. The configuration of the bot is independent from the wallet, changes
-doesn't require wallet daemon restart. It supports testing of announcements
-through local console as well as logging of notifications to a custom logfile.
-It supports multiple coin daemons from different cryptocurrencies as it uses
-generic RPC commands.
+galilel-bot is the bridge between the Galilel coin daemon or any other coin
+daemon and Discord. It uses the wallet RPC interface to forward blockchain
+related messages to any Discord channel. It allows notification about received
+transactions like donations and monitor movement of premine addresses. The
+block notification system is able to announce current block height if new block
+is detected in the network. The configuration of the bot is independent from
+the wallet, changes doesn't require wallet daemon restart. It supports testing
+of announcements through local console as well as logging of notifications to a
+custom logfile. It supports multiple coin daemons from different
+cryptocurrencies as it uses generic RPC commands.
 
 # Discord Configuration
 
@@ -25,15 +25,15 @@ The names can be freely chosen. You need to copy the `webhook.id` and the
 
 # Coin Configuration
 
-It is necessary to enable the block and wallet notifications of the Galilel
-coin daemon. Please add the following to `~/.galilel/galilel.conf` file:
+It is necessary to enable the block and wallet notifications of the coin
+daemon. Please add the following to `~/.galilel/galilel.conf` file:
 
 ```
 walletnotify=/usr/bin/galilel-bot --notify-wallet GALI %s
 blocknotify=/usr/bin/galilel-bot --notify-block GALI %s
 ```
 
-It is required to give galilel-bot RPC access to the Galilel coin daemon.
+It is required to give galilel-bot RPC access to the coin daemon.
 Minimum required configuration is the following:
 
 ```
