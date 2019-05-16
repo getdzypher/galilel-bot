@@ -135,7 +135,7 @@ function galilel_bot__show_version() {
 	return 2
 }
 
-# @_galilel_bot__curl_discord()
+# @_galilel_bot__discord_curl()
 #
 # @_${1}: discord url
 # @_${2}: webhook id
@@ -143,7 +143,7 @@ function galilel_bot__show_version() {
 # @_${4}: query
 #
 # this function communicates via curl with discord webservice.
-function galilel_bot__curl_discord() {
+function galilel_bot__discord_curl() {
 
 	# local variables.
 	local LOCAL__url="${1}"
@@ -185,7 +185,7 @@ function galilel_bot__curl_discord() {
 	return 0
 }
 
-# @_galilel_bot__curl_wallet()
+# @_galilel_bot__wallet_curl()
 #
 # @_${1}: rpc url
 # @_${2}: rpc username
@@ -193,7 +193,7 @@ function galilel_bot__curl_discord() {
 # @_${4}: query
 #
 # this function communicates via curl with wallet rpc daemon.
-function galilel_bot__curl_wallet() {
+function galilel_bot__wallet_curl() {
 
 	# local variables.
 	local LOCAL__url="${1}"
@@ -263,7 +263,7 @@ function galilel_bot__notification_wallet() {
 		}
 
 		# get wallet balance.
-		galilel_bot__curl_wallet \
+		galilel_bot__wallet_curl \
 			"${LOCAL__rpc}" \
 			"${LOCAL__username}" \
 			"${LOCAL__password}" \
@@ -278,7 +278,7 @@ function galilel_bot__notification_wallet() {
 		done <<< "${GLOBAL__result}"
 
 		# check if we found a pos block (staking).
-		galilel_bot__curl_wallet \
+		galilel_bot__wallet_curl \
 			"${LOCAL__rpc}" \
 			"${LOCAL__username}" \
 			"${LOCAL__password}" \
@@ -312,7 +312,7 @@ function galilel_bot__notification_wallet() {
 						galilel_bot__printf FILE "Received donation of **'"${LOCAL__amount}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'"
 
 						# push block notification to discord.
-						galilel_bot__curl_discord \
+						galilel_bot__discord_curl \
 							"https://discordapp.com/api/webhooks" \
 							"${GLOBAL__parameter_wallet_webhook_id}" \
 							"${GLOBAL__parameter_wallet_webhook_token}" \
@@ -343,7 +343,7 @@ function galilel_bot__notification_wallet() {
 					galilel_bot__printf FILE "Received staking reward **'"${LOCAL__reward}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'"
 
 					# push block notification to discord.
-					galilel_bot__curl_discord \
+					galilel_bot__discord_curl \
 						"https://discordapp.com/api/webhooks" \
 						"${GLOBAL__parameter_wallet_webhook_id}" \
 						"${GLOBAL__parameter_wallet_webhook_token}" \
@@ -384,7 +384,7 @@ function galilel_bot__notification_block() {
 		}
 
 		# fetch block information.
-		galilel_bot__curl_wallet \
+		galilel_bot__wallet_curl \
 			"${LOCAL__rpc}" \
 			"${LOCAL__username}" \
 			"${LOCAL__password}" \
@@ -414,7 +414,7 @@ function galilel_bot__notification_block() {
 				galilel_bot__printf FILE "New block **'"${LOCAL__height}"'** at **'"${LOCAL__date}"'** with difficulty **'"${LOCAL__difficulty}"'**"
 
 				# push block notification to discord.
-				galilel_bot__curl_discord \
+				galilel_bot__discord_curl \
 					"https://discordapp.com/api/webhooks" \
 					"${GLOBAL__parameter_block_webhook_id}" \
 					"${GLOBAL__parameter_block_webhook_token}" \
