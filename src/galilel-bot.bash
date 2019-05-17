@@ -281,7 +281,7 @@ function galilel_bot__rpc_get_balance() {
 		local LOCAL__balance="$(printf "%.5f" "${LOCAL__balance}")"
 	done <<< "${GLOBAL__curl}"
 
-	# export the result:
+	# export the result.
 	GLOBAL__result="${LOCAL__balance}"
 
 	# debug output.
@@ -321,7 +321,7 @@ function galilel_bot__rpc_get_transaction() {
 		local LOCAL__hex="$(@JSHON@ -Q -e result -e hex -u <<< "${LOCAL__line}")"
 	done <<< "${GLOBAL__curl}"
 
-	# export the result:
+	# export the result.
 	GLOBAL__result="${LOCAL__hex}"
 
 	# debug output.
@@ -372,11 +372,58 @@ function galilel_bot__rpc_get_amount() {
 		# check if address matches.
 		[ "${5}" == "${LOCAL__addresses[${LOCAL__index}]}" ] && {
 
-			# export the result:
+			# export the result.
 			GLOBAL__result="${LOCAL__values[${LOCAL__index}]}"
 			GLOBAL__result="$(printf "%.5f" "${GLOBAL__result}")"
 		}
 	done
+
+	# debug output.
+	galilel_bot__printf FILE "successful"
+
+	# if no error was found, return zero.
+	return 0
+}
+
+# @_galilel_bot__rpc_get_reward()
+#
+# @_${1}: rpc url
+# @_${2}: rpc username
+# @_${3}: rpc password
+# @_${4}: transaction id
+#
+# this function fetches the reward amount of transaction for monitored wallet address from rpc daemon.
+function galilel_bot__rpc_get_reward() {
+
+	# debug output.
+	galilel_bot__printf FILE "starting"
+
+	# clear variable.
+	unset GLOBAL__result
+
+	# get wallet balance.
+	galilel_bot__curl_wallet \
+		"${1}" \
+		"${2}" \
+		"${3}" \
+		'{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "gettransaction", "params" : [ "'"${4}"'" ] }' || return "${?}"
+
+	# loop through result.
+	while read LOCAL__line ; do
+
+		# get transaction information.
+		local LOCAL__generated="$(@JSHON@ -Q -e result -e generated -u <<< "${LOCAL__line}")"
+		local LOCAL__amount="$(@JSHON@ -Q -e result -e amount -u <<< "${LOCAL__line}")"
+		local LOCAL__fee="$(@JSHON@ -Q -e result -e fee -u <<< "${LOCAL__line}")"
+	done <<< "${GLOBAL__curl}"
+
+	# check if the block was generated.
+	[ "${LOCAL__generated}" == "true" ] && {
+
+		# calculate reward.
+		GLOBAL__result="$(echo "${LOCAL__fee}" + "${LOCAL__amount}" | @BC@)"
+		GLOBAL__result="$(printf "%.5f" "${GLOBAL__result}")"
+	}
 
 	# debug output.
 	galilel_bot__printf FILE "successful"
@@ -425,6 +472,10 @@ function galilel_bot__notification_wallet() {
 		# get amount of transaction.
 		galilel_bot__rpc_get_amount "${LOCAL__rpc}" "${LOCAL__username}" "${LOCAL__password}" "${LOCAL__transaction}" "${LOCAL__address}" || return "${?}"
 		local LOCAL__amount="${GLOBAL__result}"
+
+		# get amount of reward.
+		galilel_bot__rpc_get_reward "${LOCAL__rpc}" "${LOCAL__username}" "${LOCAL__password}" "${LOCAL__transaction}" || return "${?}"
+		local LOCAL__reward="${GLOBAL__result}"
 
 		# check if we found a pos block (staking).
 		galilel_bot__curl_wallet \
