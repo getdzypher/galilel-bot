@@ -100,7 +100,7 @@ function galilel_bot__show_help() {
 	galilel_bot__printf HELP ""
 	galilel_bot__printf HELP "      --notify-wallet   <ticker> <transaction-id>"
 	galilel_bot__printf HELP "                        discord notification about new transaction for wallet"
-	galilel_bot__printf HELP "      --notify-block    <ticker> <blockhash>"
+	galilel_bot__printf HELP "      --notify-block    <ticker> <block-hash>"
 	galilel_bot__printf HELP "                        discord notification about new block on the network"
 	galilel_bot__printf HELP ""
 	galilel_bot__printf HELP "Please report bugs to the appropriate authors, which can be found in the"
@@ -282,7 +282,7 @@ function galilel_bot__rpc_get_balance() {
 	done <<< "${GLOBAL__curl}"
 
 	# export the result.
-	GLOBAL__result=(${LOCAL__balance})
+	GLOBAL__result=("${LOCAL__balance}")
 
 	# debug output.
 	galilel_bot__printf FILE "successful"
@@ -322,7 +322,7 @@ function galilel_bot__rpc_get_transaction() {
 	done <<< "${GLOBAL__curl}"
 
 	# export the result.
-	GLOBAL__result=(${LOCAL__hex})
+	GLOBAL__result=("${LOCAL__hex}")
 
 	# debug output.
 	galilel_bot__printf FILE "successful"
@@ -373,8 +373,8 @@ function galilel_bot__rpc_get_amount() {
 		[ "${5}" == "${LOCAL__addresses[${LOCAL__index}]}" ] && {
 
 			# export the result.
-			GLOBAL__result=(${LOCAL__values[${LOCAL__index}]})
-			GLOBAL__result=($(printf "%.5f" "${GLOBAL__result[0]}"))
+			GLOBAL__result=("${LOCAL__values[${LOCAL__index}]}")
+			GLOBAL__result=("$(printf "%.5f" "${GLOBAL__result[0]}")")
 		}
 	done
 
@@ -421,9 +421,57 @@ function galilel_bot__rpc_get_reward() {
 	[ "${LOCAL__generated}" == "true" ] && {
 
 		# calculate reward.
-		GLOBAL__result=($(echo "${LOCAL__fee}" + "${LOCAL__amount}" | @BC@))
-		GLOBAL__result=($(printf "%.5f" "${GLOBAL__result[0]}"))
+		GLOBAL__result=("$(echo "${LOCAL__fee}" + "${LOCAL__amount}" | @BC@)")
+		GLOBAL__result=("$(printf "%.5f" "${GLOBAL__result[0]}")")
 	}
+
+	# debug output.
+	galilel_bot__printf FILE "successful"
+
+	# if no error was found, return zero.
+	return 0
+}
+
+# @_galilel_bot__rpc_get_block()
+#
+# @_${1}: rpc url
+# @_${2}: rpc username
+# @_${3}: rpc password
+# @_${4}: block hash
+#
+# this function fetches the block information from rpc daemon.
+function galilel_bot__rpc_get_block() {
+
+	# debug output.
+	galilel_bot__printf FILE "starting"
+
+	# clear variable.
+	unset GLOBAL__result
+
+	# get wallet transaction reward.
+	galilel_bot__curl_wallet \
+		"${1}" \
+		"${2}" \
+		"${3}" \
+		'{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "getblock", "params" : [ "'"${4}"'" ] }' || return "${?}"
+
+	# loop through result.
+	while read LOCAL__line ; do
+
+		# get block information.
+		local LOCAL__height="$(@JSHON@ -Q -e result -e height -u <<< "${LOCAL__line}")"
+		local LOCAL__difficulty="$(@JSHON@ -Q -e result -e difficulty -u <<< "${LOCAL__line}")"
+		local LOCAL__time="$(@JSHON@ -Q -e result -e time -u <<< "${LOCAL__line}")"
+
+		# get current date.
+		local LOCAL__date="$(@DATE@ --date "@${LOCAL__time}")"
+
+		# format variables.
+		local LOCAL__difficulty="$(printf "%.2f" "${LOCAL__difficulty}")"
+	done <<< "${GLOBAL__curl}"
+
+	# export the result.
+	GLOBAL__result=("${LOCAL__height}" "${LOCAL__difficulty}" "${LOCAL__date}")
 
 	# debug output.
 	galilel_bot__printf FILE "successful"
@@ -524,7 +572,7 @@ function galilel_bot__notification_wallet() {
 # @_galilel_bot__notification_block()
 #
 # @_${1}: coin ticker
-# @_${2}: blockhash
+# @_${2}: block hash
 #
 # this function sends message to discord on block changes in the network.
 function galilel_bot__notification_block() {
@@ -534,7 +582,7 @@ function galilel_bot__notification_block() {
 
 	# local variables.
 	local LOCAL__coin="${1}"
-	local LOCAL__blockhash="${2}"
+	local LOCAL__block_hash="${2}"
 
 	# loop through the configuration array.
 	local LOCAL__index
@@ -549,6 +597,12 @@ function galilel_bot__notification_block() {
 			# wrong ticker, so continue.
 			continue
 		}
+
+		# get block information.
+		galilel_bot__rpc_get_block "${LOCAL__rpc}" "${LOCAL__username}" "${LOCAL__password}" "${LOCAL__block_hash}" || return "${?}"
+		local LOCAL__height="${GLOBAL__result[0]}"
+		local LOCAL__difficulty="${GLOBAL__result[1]}"
+		local LOCAL__date="${GLOBAL__result[2]}"
 
 		# fetch block information.
 		galilel_bot__curl_wallet \
