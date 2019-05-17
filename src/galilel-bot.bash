@@ -242,14 +242,14 @@ function galilel_bot__curl_wallet() {
 	return 0
 }
 
-# @_galilel_bot__rpc_getbalance()
+# @_galilel_bot__rpc_get_balance()
 #
 # @_${1}: rpc url
 # @_${2}: rpc username
 # @_${3}: rpc password
 #
 # this function fetches the balance from rpc daemon.
-function galilel_bot__rpc_getbalance() {
+function galilel_bot__rpc_get_balance() {
 
 	# debug output.
 	galilel_bot__printf FILE "starting"
@@ -279,15 +279,15 @@ function galilel_bot__rpc_getbalance() {
 	return 0
 }
 
-# @_galilel_bot__rpc_gettransaction()
+# @_galilel_bot__rpc_get_transaction()
 #
 # @_${1}: rpc url
 # @_${2}: rpc username
 # @_${3}: rpc password
 # @_${4}: transaction id
 #
-# this function fetches the balance from rpc daemon.
-function galilel_bot__rpc_gettransaction() {
+# this function fetches the raw value of a transaction from rpc daemon.
+function galilel_bot__rpc_get_transaction() {
 
 	# debug output.
 	galilel_bot__printf FILE "starting"
@@ -346,11 +346,11 @@ function galilel_bot__notification_wallet() {
 		}
 
 		# get wallet balance.
-		galilel_bot__rpc_getbalance "${LOCAL__rpc}" "${LOCAL__username}" "${LOCAL__password}" || return "${?}"
+		galilel_bot__rpc_get_balance "${LOCAL__rpc}" "${LOCAL__username}" "${LOCAL__password}" || return "${?}"
 		local LOCAL__balance="${GLOBAL__result}"
 
 		# get wallet balance.
-		galilel_bot__rpc_gettransaction "${LOCAL__rpc}" "${LOCAL__username}" "${LOCAL__password}" "${2}" || return "${?}"
+		galilel_bot__rpc_get_transaction "${LOCAL__rpc}" "${LOCAL__username}" "${LOCAL__password}" "${2}" || return "${?}"
 		local LOCAL__transaction="${GLOBAL__result}"
 
 		# check if we found a pos block (staking).
