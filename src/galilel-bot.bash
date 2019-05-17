@@ -133,11 +133,17 @@ function galilel_bot__show_version() {
 # this function communicates via curl with discord webservice.
 function galilel_bot__curl_discord() {
 
+	# debug output.
+	galilel_bot__printf FILE "starting"
+ 
 	# local variables.
 	local LOCAL__url="${1}"
 	local LOCAL__id="${2}"
 	local LOCAL__token="${3}"
 	local LOCAL__query="${4}"
+
+	# query output.
+	galilel_bot__printf FILE "json query: '${LOCAL__query}'"
 
 	GLOBAL__result="$(@CURL@ \
 		--request POST \
@@ -154,8 +160,7 @@ function galilel_bot__curl_discord() {
 		7)
 
 			# connection error.
-			galilel_bot__printf FILE "${GALILEL_BOT_PROCESS}: failed to connect to discord webservice"
-			galilel_bot__printf FILE "${GALILEL_BOT_PROCESS}: failed query: '${LOCAL__query}'"
+			galilel_bot__printf FILE "failed to connect to discord webservice"
 
 			# return error.
 			return 7
@@ -163,13 +168,15 @@ function galilel_bot__curl_discord() {
 		22)
 
 			# http protocol error.
-			galilel_bot__printf FILE "${GALILEL_BOT_PROCESS}: failed to retrieve url from discord webservice"
-			galilel_bot__printf FILE "${GALILEL_BOT_PROCESS}: failed query: '${LOCAL__query}'"
+			galilel_bot__printf FILE "failed to retrieve url from discord webservice"
 
 			# return error.
 			return 22
 		;;
 	esac
+
+	# debug output.
+	galilel_bot__printf FILE "successful"
 
 	# if no error was found, return zero.
 	return 0
@@ -185,11 +192,17 @@ function galilel_bot__curl_discord() {
 # this function communicates via curl with wallet rpc daemon.
 function galilel_bot__curl_wallet() {
 
+	# debug output.
+	galilel_bot__printf FILE "starting"
+
 	# local variables.
 	local LOCAL__url="${1}"
 	local LOCAL__username="${2}"
 	local LOCAL__password="${3}"
 	local LOCAL__query="${4}"
+
+	# query output.
+	galilel_bot__printf FILE "json query: '${LOCAL__query}'"
 
 	GLOBAL__result="$(@CURL@ \
 		--request POST \
@@ -207,8 +220,7 @@ function galilel_bot__curl_wallet() {
 		7)
 
 			# connection error.
-			galilel_bot__printf FILE "${GALILEL_BOT_PROCESS}: failed to connect to RPC wallet"
-			galilel_bot__printf FILE "${GALILEL_BOT_PROCESS}: failed query: '${LOCAL__query}'"
+			galilel_bot__printf FILE "failed to connect to RPC wallet"
 
 			# return error.
 			return 7
@@ -216,13 +228,15 @@ function galilel_bot__curl_wallet() {
 		22)
 
 			# http protocol error.
-			galilel_bot__printf FILE "${GALILEL_BOT_PROCESS}: failed to retrieve url from RPC wallet"
-			galilel_bot__printf FILE "${GALILEL_BOT_PROCESS}: failed query: '${LOCAL__query}'"
+			galilel_bot__printf FILE "failed to retrieve url from RPC wallet"
 
 			# return error.
 			return 22
 		;;
 	esac
+
+	# debug output.
+	galilel_bot__printf FILE "successful"
 
 	# if no error was found, return zero.
 	return 0
@@ -236,6 +250,9 @@ function galilel_bot__curl_wallet() {
 #
 # this function fetches the balance from rpc daemon.
 function galilel_bot__rpc_getbalance() {
+
+	# debug output.
+	galilel_bot__printf FILE "starting"
 
 	# get wallet balance.
 	galilel_bot__curl_wallet \
@@ -255,6 +272,9 @@ function galilel_bot__rpc_getbalance() {
 	# export the result:
 	GLOBAL__result="${LOCAL__balance}"
 
+	# debug output.
+	galilel_bot__printf FILE "successful"
+
 	# if no error was found, return zero.
 	return 0
 }
@@ -268,6 +288,9 @@ function galilel_bot__rpc_getbalance() {
 #
 # this function fetches the balance from rpc daemon.
 function galilel_bot__rpc_gettransaction() {
+
+	# debug output.
+	galilel_bot__printf FILE "starting"
 
 	# get wallet balance.
 	galilel_bot__curl_wallet \
@@ -286,6 +309,9 @@ function galilel_bot__rpc_gettransaction() {
 	# export the result:
 	GLOBAL__result="${LOCAL__hex}"
 
+	# debug output.
+	galilel_bot__printf FILE "successful"
+
 	# if no error was found, return zero.
 	return 0
 }
@@ -297,6 +323,9 @@ function galilel_bot__rpc_gettransaction() {
 #
 # this function sends message to discord on monitored wallet address changes.
 function galilel_bot__notification_wallet() {
+
+	# debug output.
+	galilel_bot__printf FILE "starting"
 
 	# local variables.
 	local LOCAL__coin="${1}"
@@ -394,6 +423,9 @@ function galilel_bot__notification_wallet() {
 		done <<< "${GLOBAL__result}"
 	done
 
+	# debug output.
+	galilel_bot__printf FILE "successful"
+
 	# if no error was found, return zero.
 	return 0
 }
@@ -405,6 +437,9 @@ function galilel_bot__notification_wallet() {
 #
 # this function sends message to discord on block changes in the network.
 function galilel_bot__notification_block() {
+
+	# debug output.
+	galilel_bot__printf FILE "starting"
 
 	# local variables.
 	local LOCAL__coin="${1}"
@@ -461,6 +496,9 @@ function galilel_bot__notification_block() {
 		done <<< "${GLOBAL__result}"
 	done
 
+	# debug output.
+	galilel_bot__printf FILE "successful"
+
 	# if no error was found, return zero.
 	return 0
 }
@@ -469,6 +507,9 @@ function galilel_bot__notification_block() {
 #
 # this function initializes the application and does various permission checks.
 function galilel_bot__init() {
+
+	# debug output.
+	galilel_bot__printf FILE "starting"
 
 	# check if configuration file is readable.
 	[ ! -r "${GLOBAL__parameter_conffile}" ] && {
@@ -512,6 +553,9 @@ function galilel_bot__init() {
 			}
 		}
 	}
+
+	# debug output.
+	galilel_bot__printf FILE "successful"
 
 	# if no error was found, return zero.
 	return 0
