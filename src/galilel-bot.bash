@@ -59,15 +59,8 @@ function galilel_bot__printf() {
 		;;
 		INFO)
 
-			# check override options.
-			case "${GLOBAL__parameter_debug}" in
-				enabled)
-					echo -e "${FUNCNAME[1]##*__}() ${@}"
-				;;
-				disabled)
-					echo -e "${@}"
-				;;
-			esac
+			# console output.
+			echo -e "${@}"
 
 			# check if we should write to logfile.
 			[ -n "${GLOBAL__parameter_logfile}" ] && {
@@ -75,6 +68,11 @@ function galilel_bot__printf() {
 			}
 		;;
 		FILE)
+
+			# check if we should write debug output to console.
+			[ "${GLOBAL__parameter_debug}" == "enabled" ] && {
+				echo -e "${FUNCNAME[1]##*__}() ${@}"
+			}
 
 			# check if we should write to logfile.
 			[ -n "${GLOBAL__parameter_logfile}" ] && {
@@ -166,8 +164,8 @@ function galilel_bot__curl_discord() {
 		7)
 
 			# connection error.
-			galilel_bot__printf INFO "${GALILEL_BOT_PROCESS}: failed to connect to discord webservice"
-			galilel_bot__printf INFO "${GALILEL_BOT_PROCESS}: failed query: '${LOCAL__query}'"
+			galilel_bot__printf FILE "${GALILEL_BOT_PROCESS}: failed to connect to discord webservice"
+			galilel_bot__printf FILE "${GALILEL_BOT_PROCESS}: failed query: '${LOCAL__query}'"
 
 			# return error.
 			return 7
@@ -175,8 +173,8 @@ function galilel_bot__curl_discord() {
 		22)
 
 			# http protocol error.
-			galilel_bot__printf INFO "${GALILEL_BOT_PROCESS}: failed to retrieve url from discord webservice"
-			galilel_bot__printf INFO "${GALILEL_BOT_PROCESS}: failed query: '${LOCAL__query}'"
+			galilel_bot__printf FILE "${GALILEL_BOT_PROCESS}: failed to retrieve url from discord webservice"
+			galilel_bot__printf FILE "${GALILEL_BOT_PROCESS}: failed query: '${LOCAL__query}'"
 
 			# return error.
 			return 22
@@ -219,8 +217,8 @@ function galilel_bot__curl_wallet() {
 		7)
 
 			# connection error.
-			galilel_bot__printf INFO "${GALILEL_BOT_PROCESS}: failed to connect to RPC wallet"
-			galilel_bot__printf INFO "${GALILEL_BOT_PROCESS}: failed query: '${LOCAL__query}'"
+			galilel_bot__printf FILE "${GALILEL_BOT_PROCESS}: failed to connect to RPC wallet"
+			galilel_bot__printf FILE "${GALILEL_BOT_PROCESS}: failed query: '${LOCAL__query}'"
 
 			# return error.
 			return 7
@@ -228,8 +226,8 @@ function galilel_bot__curl_wallet() {
 		22)
 
 			# http protocol error.
-			galilel_bot__printf INFO "${GALILEL_BOT_PROCESS}: failed to retrieve url from RPC wallet"
-			galilel_bot__printf INFO "${GALILEL_BOT_PROCESS}: failed query: '${LOCAL__query}'"
+			galilel_bot__printf FILE "${GALILEL_BOT_PROCESS}: failed to retrieve url from RPC wallet"
+			galilel_bot__printf FILE "${GALILEL_BOT_PROCESS}: failed query: '${LOCAL__query}'"
 
 			# return error.
 			return 22
