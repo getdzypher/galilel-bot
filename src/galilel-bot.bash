@@ -36,7 +36,7 @@ declare -g GLOBAL__parameter_block_webhook_id
 declare -g GLOBAL__parameter_block_webhook_token
 
 # global result variable.
-declare -g GLOBAL__result
+declare -a GLOBAL__result
 
 # global curl value.
 declare -g GLOBAL__curl
@@ -282,7 +282,7 @@ function galilel_bot__rpc_get_balance() {
 	done <<< "${GLOBAL__curl}"
 
 	# export the result.
-	GLOBAL__result="${LOCAL__balance}"
+	GLOBAL__result=(${LOCAL__balance})
 
 	# debug output.
 	galilel_bot__printf FILE "successful"
@@ -307,7 +307,7 @@ function galilel_bot__rpc_get_transaction() {
 	# clear variable.
 	unset GLOBAL__result
 
-	# get wallet balance.
+	# get wallet transaction.
 	galilel_bot__curl_wallet \
 		"${1}" \
 		"${2}" \
@@ -322,7 +322,7 @@ function galilel_bot__rpc_get_transaction() {
 	done <<< "${GLOBAL__curl}"
 
 	# export the result.
-	GLOBAL__result="${LOCAL__hex}"
+	GLOBAL__result=(${LOCAL__hex})
 
 	# debug output.
 	galilel_bot__printf FILE "successful"
@@ -348,7 +348,7 @@ function galilel_bot__rpc_get_amount() {
 	# clear variable.
 	unset GLOBAL__result
 
-	# get wallet balance.
+	# get wallet transaction amount.
 	galilel_bot__curl_wallet \
 		"${1}" \
 		"${2}" \
@@ -373,8 +373,8 @@ function galilel_bot__rpc_get_amount() {
 		[ "${5}" == "${LOCAL__addresses[${LOCAL__index}]}" ] && {
 
 			# export the result.
-			GLOBAL__result="${LOCAL__values[${LOCAL__index}]}"
-			GLOBAL__result="$(printf "%.5f" "${GLOBAL__result}")"
+			GLOBAL__result=(${LOCAL__values[${LOCAL__index}]})
+			GLOBAL__result=($(printf "%.5f" "${GLOBAL__result[0]}"))
 		}
 	done
 
@@ -401,7 +401,7 @@ function galilel_bot__rpc_get_reward() {
 	# clear variable.
 	unset GLOBAL__result
 
-	# get wallet balance.
+	# get wallet transaction reward.
 	galilel_bot__curl_wallet \
 		"${1}" \
 		"${2}" \
@@ -421,8 +421,8 @@ function galilel_bot__rpc_get_reward() {
 	[ "${LOCAL__generated}" == "true" ] && {
 
 		# calculate reward.
-		GLOBAL__result="$(echo "${LOCAL__fee}" + "${LOCAL__amount}" | @BC@)"
-		GLOBAL__result="$(printf "%.5f" "${GLOBAL__result}")"
+		GLOBAL__result=($(echo "${LOCAL__fee}" + "${LOCAL__amount}" | @BC@))
+		GLOBAL__result=($(printf "%.5f" "${GLOBAL__result[0]}"))
 	}
 
 	# debug output.
@@ -463,54 +463,54 @@ function galilel_bot__notification_wallet() {
 
 		# get wallet balance.
 		galilel_bot__rpc_get_balance "${LOCAL__rpc}" "${LOCAL__username}" "${LOCAL__password}" || return "${?}"
-		local LOCAL__balance="${GLOBAL__result}"
+		local LOCAL__balance="${GLOBAL__result[0]}"
 
 		# get raw transaction.
 		galilel_bot__rpc_get_transaction "${LOCAL__rpc}" "${LOCAL__username}" "${LOCAL__password}" "${LOCAL__transaction_id}" || return "${?}"
-		local LOCAL__transaction="${GLOBAL__result}"
+		local LOCAL__transaction="${GLOBAL__result[0]}"
 
 		# get amount of transaction.
 		galilel_bot__rpc_get_amount "${LOCAL__rpc}" "${LOCAL__username}" "${LOCAL__password}" "${LOCAL__transaction}" "${LOCAL__address}" || return "${?}"
-		local LOCAL__amount="${GLOBAL__result}"
+		local LOCAL__amount="${GLOBAL__result[0]}"
 
 		# get amount of reward.
 		galilel_bot__rpc_get_reward "${LOCAL__rpc}" "${LOCAL__username}" "${LOCAL__password}" "${LOCAL__transaction_id}" || return "${?}"
-		local LOCAL__reward="${GLOBAL__result}"
+		local LOCAL__reward="${GLOBAL__result[0]}"
 
 		# check if we found a pos block (staking).
 		[ -n "${LOCAL__reward}" ] && {
 
-				# show information.
-				galilel_bot__printf FILE "Received staking reward **'"${LOCAL__reward}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'"
+			# show information.
+			galilel_bot__printf FILE "Received staking reward **'"${LOCAL__reward}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'"
 
-				# check if in production mode.
-				[ "${GLOBAL__parameter_test}" == "disabled" ] && {
+			# check if in production mode.
+			[ "${GLOBAL__parameter_test}" == "disabled" ] && {
 
-					# push block notification to discord.
-					galilel_bot__curl_discord \
-						"https://discordapp.com/api/webhooks" \
-						"${GLOBAL__parameter_wallet_webhook_id}" \
-						"${GLOBAL__parameter_wallet_webhook_token}" \
-						'{ "content" : "Received staking reward **'"${LOCAL__reward}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'" }' || return "${?}"
-				}
+				# push wallet notification to discord.
+				galilel_bot__curl_discord \
+					"https://discordapp.com/api/webhooks" \
+					"${GLOBAL__parameter_wallet_webhook_id}" \
+					"${GLOBAL__parameter_wallet_webhook_token}" \
+					'{ "content" : "Received staking reward **'"${LOCAL__reward}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'" }' || return "${?}"
+			}
 		}
 
 		# check if we received a transaction (transfer).
 		[ -n "${LOCAL__amount}" ] && {
 
-				# show information.
-				galilel_bot__printf FILE "Received donation of **'"${LOCAL__amount}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'"
+			# show information.
+			galilel_bot__printf FILE "Received donation of **'"${LOCAL__amount}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'"
 
-				# check if in production mode.
-				[ "${GLOBAL__parameter_test}" == "disabled" ] && {
+			# check if in production mode.
+			[ "${GLOBAL__parameter_test}" == "disabled" ] && {
 
-					# push block notification to discord.
-					galilel_bot__curl_discord \
-						"https://discordapp.com/api/webhooks" \
-						"${GLOBAL__parameter_wallet_webhook_id}" \
-						"${GLOBAL__parameter_wallet_webhook_token}" \
-						'{ "content" : "Received donation of **'"${LOCAL__amount}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'" }' || return "${?}"
-				}
+				# push wallet notification to discord.
+				galilel_bot__curl_discord \
+					"https://discordapp.com/api/webhooks" \
+					"${GLOBAL__parameter_wallet_webhook_id}" \
+					"${GLOBAL__parameter_wallet_webhook_token}" \
+					'{ "content" : "Received donation of **'"${LOCAL__amount}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'" }' || return "${?}"
+			}
 		}
 	done
 
