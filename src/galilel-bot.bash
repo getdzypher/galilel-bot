@@ -139,6 +139,9 @@ function galilel_bot__curl_discord() {
 	# debug output.
 	galilel_bot__printf FILE "starting"
 
+	# clear variable.
+	unset GLOBAL__curl
+
 	# local variables.
 	local LOCAL__url="${1}"
 	local LOCAL__id="${2}"
@@ -197,6 +200,9 @@ function galilel_bot__curl_wallet() {
 
 	# debug output.
 	galilel_bot__printf FILE "starting"
+
+	# clear variable.
+	unset GLOBAL__curl
 
 	# local variables.
 	local LOCAL__url="${1}"
@@ -257,6 +263,9 @@ function galilel_bot__rpc_get_balance() {
 	# debug output.
 	galilel_bot__printf FILE "starting"
 
+	# clear variable.
+	unset GLOBAL__result
+
 	# get wallet balance.
 	galilel_bot__curl_wallet \
 		"${1}" \
@@ -295,6 +304,9 @@ function galilel_bot__rpc_get_transaction() {
 	# debug output.
 	galilel_bot__printf FILE "starting"
 
+	# clear variable.
+	unset GLOBAL__result
+
 	# get wallet balance.
 	galilel_bot__curl_wallet \
 		"${1}" \
@@ -332,6 +344,9 @@ function galilel_bot__rpc_get_amount() {
 
 	# debug output.
 	galilel_bot__printf FILE "starting"
+
+	# clear variable.
+	unset GLOBAL__result
 
 	# get wallet balance.
 	galilel_bot__curl_wallet \
