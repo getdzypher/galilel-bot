@@ -13,3 +13,8 @@ DISCORD_WALLET_WEBHOOK_TOKEN="5fbJ3d531IKTk9X706d35R1uovFZfVTcAkDQUp4vjkH5xiLf6F
 # discord webhook (block notification bot).
 DISCORD_BLOCK_WEBHOOK_ID="907862382457824421"
 DISCORD_BLOCK_WEBHOOK_TOKEN="94TsRdZNTa1neShJQ9pA7baGRx2yrY1P8EVZmQM0ubhkQKzIiuaX9QZ97KdquaUqZzdy"
+
+# notification texts (if number of %s is changed, behavior is unknown).
+TEXT_REWARD="Received staking reward **%s** %s with new balance of **%s** %s"
+TEXT_TRANSFER="Received donation of **%s** %s with new balance of **%s** %s"
+TEXT_BLOCK="New block **%s** at **%s** with difficulty **%s**"

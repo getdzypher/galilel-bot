@@ -9,7 +9,8 @@ height if new block is detected in the network. The configuration of the bot is
 independent from the wallet and changes doesn't require wallet daemon restart.
 It supports testing of announcements through local console as well as logging
 of notifications to a custom logfile. It supports multiple coin daemons from
-different cryptocurrencies as it uses generic RPC commands.
+different cryptocurrencies as it uses generic RPC commands. Lastly it supports
+standard and multisig address monitoring.
 
 # Installation
 
@@ -81,6 +82,11 @@ DISCORD_WALLET_WEBHOOK_TOKEN="5fbJ3d531IKTk9X706d35R1uovFZfVTcAkDQUp4vjkH5xiLf6F
 # discord webhook (block notification bot).
 DISCORD_BLOCK_WEBHOOK_ID="907862382457824421"
 DISCORD_BLOCK_WEBHOOK_TOKEN="94TsRdZNTa1neShJQ9pA7baGRx2yrY1P8EVZmQM0ubhkQKzIiuaX9QZ97KdquaUqZzdy"
+
+# notification texts.
+TEXT_REWARD="Received staking reward **%s** %s with new balance of **%s** %s"
+TEXT_TRANSFER="Received donation of **%s** %s with new balance of **%s** %s"
+TEXT_BLOCK="New block **%s** at **%s** with difficulty **%s**"
 ```
 
 The address column is an optional field if the wallet notification bot
@@ -123,26 +129,83 @@ It is possible to test wallet daemon configuration with announcements to local
 console. You can execute the bot manually, for example wallet notification:
 
 ```
-$> galilel-bot --test --notify-wallet GALI c9d674b4a53cf31086bac309b11bd860945e8d53597eabaf9a4216c6868b97ea
-Received donation of **'250.0'** 'GALI' with new balance of **'270343.04048631'** 'GALI'
+$> galilel-bot --debug --test --notify-wallet GALI b6b281e0fc50bf24955f0fbd1089f2d9e08f50aa9e559358b5e7a4663de58ce1
+init() starting
+init() successful
+notification_wallet() starting
+rpc_get_balance() starting
+curl_wallet() starting
+curl_wallet() json query: '{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "getbalance", "params" : [ ] }'
+curl_wallet() successful
+rpc_get_balance() successful
+rpc_get_transaction() starting
+curl_wallet() starting
+curl_wallet() json query: '{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "gettransaction", "params" : [ "b6b281e0fc50bf24955f0fbd1089f2d9e08f50aa9e559358b5e7a4663de58ce1" ] }'
+curl_wallet() successful
+rpc_get_transaction() successful
+rpc_get_amount() starting
+curl_wallet() starting
+curl_wallet() json query: '{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "decoderawtransaction", "params" : [ "0100000002105d2a5eeafa68cf1c7693d04b22b01faaa9e1830e92f581c9358e3bbd9bea20010000006a47304402201e91fc52bcf6303d8e69d2df3aa99c6e4cf35ecb8ea7dcec574741f82b3b2fa502202931e2dc67a62e6fc3094f130b061b572babbeb5504aaf23dd4f8e1759923f720121026240a615c7d7da4ef3b9bb6edf1a362bcb38a808e4328931ae62fc7fc45ed9c8fffffffffe6a04173ff73dd76df9277cd57c017a27dac8356fef8886616394a51c74ae95010000006b483045022100edcc3050beab359b809410a4202c5cf09bdbff7e831fff41305798e7f76d3b7c02207bb0acce4155290bb1463117f99eb4a272b0f2b5d328ee8683439ae2a6045f1c012102ae01fd0e05789b942f78150d91299baa6507a21dc2251a4cd0e12f516e111dacffffffff0200e1f5050000000017a91411e3fa7baa678ebc20e40741b4c359f1ce18e1af87dfdd7801000000001976a914776a412dbeca0f5ab4347b09f59811937a94f02788ac00000000" ] }'
+curl_wallet() successful
+rpc_get_amount() successful
+rpc_get_reward() starting
+curl_wallet() starting
+curl_wallet() json query: '{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "gettransaction", "params" : [ "b6b281e0fc50bf24955f0fbd1089f2d9e08f50aa9e559358b5e7a4663de58ce1" ] }'
+curl_wallet() successful
+rpc_get_reward() successful
+notification_wallet() Received donation of **1.00000** GALI with new balance of **21830.46752** GALI
+notification_wallet() successful
 ```
 
 ```
-$> galilel-bot --test --notify-wallet GALI e6698a51943e23877d3ad71d4f5c6231a5b4ba90f4f741e4aebce31b9585a9a1
-Received staking reward **'19.99999'** 'GALI' with new balance of **'268413.04135991'** 'GALI'
+$> galilel-bot --debug --test --notify-wallet GALI 326259bf87cde3f419df4c2f667ef4468264cb40d56f7424ee4166a08a0d30fb
+init() starting
+init() successful
+notification_wallet() starting
+rpc_get_balance() starting
+curl_wallet() starting
+curl_wallet() json query: '{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "getbalance", "params" : [ ] }'
+curl_wallet() successful
+rpc_get_balance() successful
+rpc_get_transaction() starting
+curl_wallet() starting
+curl_wallet() json query: '{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "gettransaction", "params" : [ "326259bf87cde3f419df4c2f667ef4468264cb40d56f7424ee4166a08a0d30fb" ] }'
+curl_wallet() successful
+rpc_get_transaction() successful
+rpc_get_amount() starting
+curl_wallet() starting
+curl_wallet() json query: '{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "decoderawtransaction", "params" : [ "010000000155e23823620b62e7d6e2a1546ffdd9f0be6448987b95ebeb4c8f0195c21938c0010000004847304402202f828bc838d6ff70329a14eeb44c7a0c31f8408576111b0c52104dca8af22759022036729e1f32b963790f25be43669e5a50b01fb45f302f83d378c654ab74f394f301ffffffff03000000000000000000003cfedc510000002321036f682253c0cf1e9b04969a3c67e3ffb32b627264c78989fbfbca1b50605528ceac8093dc14000000001976a91426e414a0386efa784e24d113068f6bc6cc51885188ac00000000" ] }'
+curl_wallet() successful
+rpc_get_amount() successful
+rpc_get_reward() starting
+curl_wallet() starting
+curl_wallet() json query: '{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "gettransaction", "params" : [ "326259bf87cde3f419df4c2f667ef4468264cb40d56f7424ee4166a08a0d30fb" ] }'
+curl_wallet() successful
+rpc_get_reward() successful
+notification_wallet() Received staking reward **1.50000** GALI with new balance of **21830.46752** GALI
+notification_wallet() successful
 ```
 
 and block notification:
 
 ```
-$> galilel-bot --test --notify-block GALI 570d66289f41f835cbc5a6ba521ad007ab9958c4773c1fea82d8b338e633bd8c
-New block **'189685'** at **'Thu Oct 4 15:45:48 CEST 2018'** with difficulty **'50829.65'**
+$> galilel-bot --debug --test --notify-block GALI c30d74043896bdeb25ac3aa7227da94e360fec668f22c424bd81d1ad7d0a0f53
+init() starting
+init() successful
+notification_block() starting
+rpc_get_block() starting
+curl_wallet() starting
+curl_wallet() json query: '{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "getblock", "params" : [ "c30d74043896bdeb25ac3aa7227da94e360fec668f22c424bd81d1ad7d0a0f53" ] }'
+curl_wallet() successful
+rpc_get_block() successful
+notification_block() New block **522449** at **Fri 17 May 2019 07:45:16 PM CEST** with difficulty **32807.05**
+notification_block() successful
 ```
 
-The output is the raw text with the discord markdown characters. If the
-`--notify-wallet` output is empty, nothing was received with the given
-transaction id for the monitored wallet address (neither a transaction nor a
-reward).
+The output is the raw text with the discord markdown characters. If `--debug`
+is not used and the `--notify-wallet` output is empty, nothing was received
+with the given transaction id for the monitored wallet address (neither a
+transaction nor a reward).
 
 # Help
 

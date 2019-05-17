@@ -34,6 +34,9 @@ declare -g GLOBAL__parameter_wallet_webhook_id
 declare -g GLOBAL__parameter_wallet_webhook_token
 declare -g GLOBAL__parameter_block_webhook_id
 declare -g GLOBAL__parameter_block_webhook_token
+declare -g GLOBAL__parameter_text_reward
+declare -g GLOBAL__parameter_text_transfer
+declare -g GLOBAL__parameter_text_block
 
 # global result variable.
 declare -a GLOBAL__result
@@ -147,7 +150,13 @@ function galilel_bot__curl_discord() {
 	local LOCAL__url="${1}"
 	local LOCAL__id="${2}"
 	local LOCAL__token="${3}"
-	local LOCAL__query="${4}"
+	local LOCAL__text="${4}"
+
+	# shift variable.
+	shift 4
+
+	# build query.
+	local LOCAL__query="$(printf "{ "'"'"content"'"'" : "'"'"${LOCAL__text}"'"'" }" "${@}")"
 
 	# query output.
 	galilel_bot__printf FILE "json query: '${LOCAL__query}'"
@@ -530,7 +539,7 @@ function galilel_bot__notification_wallet() {
 		[ -n "${LOCAL__reward}" ] && {
 
 			# show information.
-			galilel_bot__printf FILE "Received staking reward **'"${LOCAL__reward}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'"
+			galilel_bot__printf FILE "${GLOBAL__parameter_text_reward}" "${LOCAL__reward}" "${LOCAL__coin}" "${LOCAL__balance}" "${LOCAL__coin}"
 
 			# check if in production mode.
 			[ "${GLOBAL__parameter_test}" == "disabled" ] && {
@@ -540,7 +549,11 @@ function galilel_bot__notification_wallet() {
 					"https://discordapp.com/api/webhooks" \
 					"${GLOBAL__parameter_wallet_webhook_id}" \
 					"${GLOBAL__parameter_wallet_webhook_token}" \
-					'{ "content" : "Received staking reward **'"${LOCAL__reward}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'" }' || return "${?}"
+					"${GLOBAL__parameter_text_reward}" \
+					"${LOCAL__reward}" \
+					"${LOCAL__coin}" \
+					"${LOCAL__balance}" \
+					"${LOCAL__coin}"
 			}
 		}
 
@@ -548,7 +561,7 @@ function galilel_bot__notification_wallet() {
 		[ -n "${LOCAL__amount}" ] && {
 
 			# show information.
-			galilel_bot__printf FILE "Received donation of **'"${LOCAL__amount}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'"
+			galilel_bot__printf FILE "${GLOBAL__parameter_text_transfer}" "${LOCAL__amount}" "${LOCAL__coin}" "${LOCAL__balance}" "${LOCAL__coin}"
 
 			# check if in production mode.
 			[ "${GLOBAL__parameter_test}" == "disabled" ] && {
@@ -558,7 +571,11 @@ function galilel_bot__notification_wallet() {
 					"https://discordapp.com/api/webhooks" \
 					"${GLOBAL__parameter_wallet_webhook_id}" \
 					"${GLOBAL__parameter_wallet_webhook_token}" \
-					'{ "content" : "Received donation of **'"${LOCAL__amount}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'" }' || return "${?}"
+					"${GLOBAL__parameter_text_transfer}" \
+					"${LOCAL__amount}" \
+					"${LOCAL__coin}" \
+					"${LOCAL__balance}" \
+					"${LOCAL__coin}"
 			}
 		}
 	done
@@ -606,7 +623,7 @@ function galilel_bot__notification_block() {
 		local LOCAL__date="${GLOBAL__result[2]}"
 
 		# show information.
-		galilel_bot__printf FILE "New block **'"${LOCAL__height}"'** at **'"${LOCAL__date}"'** with difficulty **'"${LOCAL__difficulty}"'**"
+		galilel_bot__printf FILE "${GLOBAL__parameter_text_block}" "${LOCAL__height}" "${LOCAL__date}" "${LOCAL__difficulty}"
 
 		# check if in production mode.
 		[ "${GLOBAL__parameter_test}" == "disabled" ] && {
@@ -616,7 +633,10 @@ function galilel_bot__notification_block() {
 				"https://discordapp.com/api/webhooks" \
 				"${GLOBAL__parameter_block_webhook_id}" \
 				"${GLOBAL__parameter_block_webhook_token}" \
-				'{ "content" : "New block **'"${LOCAL__height}"'** at **'"${LOCAL__date}"'** with difficulty **'"${LOCAL__difficulty}"'**" }' || return "${?}"
+				"${GLOBAL__parameter_text_block}" \
+				"${LOCAL__height}" \
+				"${LOCAL__date}" \
+				"${LOCAL__difficulty}"
 		}
 	done
 
@@ -653,6 +673,9 @@ function galilel_bot__init() {
 	GLOBAL__parameter_wallet_webhook_token="${DISCORD_WALLET_WEBHOOK_TOKEN}"
 	GLOBAL__parameter_block_webhook_id="${DISCORD_BLOCK_WEBHOOK_ID}"
 	GLOBAL__parameter_block_webhook_token="${DISCORD_BLOCK_WEBHOOK_TOKEN}"
+	GLOBAL__parameter_text_reward="${TEXT_REWARD}"
+	GLOBAL__parameter_text_transfer="${TEXT_TRANSFER}"
+	GLOBAL__parameter_text_block="${TEXT_BLOCK}"
 
 	# check if logfile is enabled, directory and file is writable.
 	[ -n "${GLOBAL__parameter_logfile}" ] && {
