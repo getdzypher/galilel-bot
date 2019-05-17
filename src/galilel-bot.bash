@@ -604,41 +604,19 @@ function galilel_bot__notification_block() {
 		local LOCAL__difficulty="${GLOBAL__result[1]}"
 		local LOCAL__date="${GLOBAL__result[2]}"
 
-		# fetch block information.
-		galilel_bot__curl_wallet \
-			"${LOCAL__rpc}" \
-			"${LOCAL__username}" \
-			"${LOCAL__password}" \
-			'{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "getblock", "params" : [ "'"${LOCAL__blockhash}"'" ] }' || return "${?}"
+		# show information.
+		galilel_bot__printf FILE "New block **'"${LOCAL__height}"'** at **'"${LOCAL__date}"'** with difficulty **'"${LOCAL__difficulty}"'**"
 
-		# loop through result.
-		while read LOCAL__line ; do
+		# check if in production mode.
+		[ "${GLOBAL__parameter_test}" == "disabled" ] && {
 
-			# get block information.
-			local LOCAL__height="$(@JSHON@ -Q -e result -e height -u <<< "${LOCAL__line}")"
-			local LOCAL__difficulty="$(@JSHON@ -Q -e result -e difficulty -u <<< "${LOCAL__line}")"
-			local LOCAL__time="$(@JSHON@ -Q -e result -e time -u <<< "${LOCAL__line}")"
-
-			# get current date.
-			local LOCAL__date="$(@DATE@ --date "@${LOCAL__time}")"
-
-			# format variables.
-			local LOCAL__difficulty="$(printf "%.2f" "${LOCAL__difficulty}")"
-
-			# show information.
-			galilel_bot__printf FILE "New block **'"${LOCAL__height}"'** at **'"${LOCAL__date}"'** with difficulty **'"${LOCAL__difficulty}"'**"
-
-			# check if in production mode.
-			[ "${GLOBAL__parameter_test}" == "disabled" ] && {
-
-				# push block notification to discord.
-				galilel_bot__curl_discord \
-					"https://discordapp.com/api/webhooks" \
-					"${GLOBAL__parameter_block_webhook_id}" \
-					"${GLOBAL__parameter_block_webhook_token}" \
-					'{ "content" : "New block **'"${LOCAL__height}"'** at **'"${LOCAL__date}"'** with difficulty **'"${LOCAL__difficulty}"'**" }' || return "${?}"
-			}
-		done <<< "${GLOBAL__result}"
+			# push block notification to discord.
+			galilel_bot__curl_discord \
+				"https://discordapp.com/api/webhooks" \
+				"${GLOBAL__parameter_block_webhook_id}" \
+				"${GLOBAL__parameter_block_webhook_token}" \
+				'{ "content" : "New block **'"${LOCAL__height}"'** at **'"${LOCAL__date}"'** with difficulty **'"${LOCAL__difficulty}"'**" }' || return "${?}"
+		}
 	done
 
 	# debug output.
