@@ -51,25 +51,26 @@ function galilel_bot__printf() {
 
 	# local variables.
 	local LOCAL__level="${1}"
+	local LOCAL__text="${2}"
 
 	# shift variable.
-	shift
+	shift 2
 
 	# check output level.
 	case "${LOCAL__level}" in
 		HELP)
-			echo -e "${@}"
+			printf "${LOCAL__text}\n" "${@}"
 		;;
 		FILE)
 
 			# check if we should write debug output to console.
 			[ "${GLOBAL__parameter_debug}" == "enabled" ] && {
-				echo -e "${FUNCNAME[1]##*__}() ${@}"
+				printf "${FUNCNAME[1]##*__}() ${LOCAL__text}\n" "${@}"
 			}
 
 			# check if we should write to logfile.
 			[ -n "${GLOBAL__parameter_logfile}" ] && {
-				echo -e "$(@DATE@ '+%b %e %H:%M:%S')" "${HOSTNAME}" "${GALILEL_BOT_PROCESS}[$$]:" "${FUNCNAME[1]##*__}() ${@}" >> "${GLOBAL__parameter_logfile}"
+				printf "$(/usr/bin/date '+%b %e %H:%M:%S') ${HOSTNAME} ${GALILEL_BOT_PROCESS}[$$]: ${FUNCNAME[1]##*__}() ${LOCAL__text}\n" "${@}" >> "${GLOBAL__parameter_logfile}"
 			}
 		;;
 	esac
