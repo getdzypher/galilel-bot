@@ -135,7 +135,7 @@ function galilel_bot__show_version() {
 	return 2
 }
 
-# @_galilel_bot__discord_curl()
+# @_galilel_bot__curl_discord()
 #
 # @_${1}: discord url
 # @_${2}: webhook id
@@ -143,7 +143,7 @@ function galilel_bot__show_version() {
 # @_${4}: query
 #
 # this function communicates via curl with discord webservice.
-function galilel_bot__discord_curl() {
+function galilel_bot__curl_discord() {
 
 	# local variables.
 	local LOCAL__url="${1}"
@@ -167,6 +167,7 @@ function galilel_bot__discord_curl() {
 
 			# connection error.
 			galilel_bot__printf INFO "${GALILEL_BOT_PROCESS}: failed to connect to discord webservice"
+			galilel_bot__printf INFO "${GALILEL_BOT_PROCESS}: failed query: '${LOCAL__query}'"
 
 			# return error.
 			return 7
@@ -175,6 +176,7 @@ function galilel_bot__discord_curl() {
 
 			# http protocol error.
 			galilel_bot__printf INFO "${GALILEL_BOT_PROCESS}: failed to retrieve url from discord webservice"
+			galilel_bot__printf INFO "${GALILEL_BOT_PROCESS}: failed query: '${LOCAL__query}'"
 
 			# return error.
 			return 22
@@ -185,7 +187,7 @@ function galilel_bot__discord_curl() {
 	return 0
 }
 
-# @_galilel_bot__wallet_curl()
+# @_galilel_bot__curl_wallet()
 #
 # @_${1}: rpc url
 # @_${2}: rpc username
@@ -193,7 +195,7 @@ function galilel_bot__discord_curl() {
 # @_${4}: query
 #
 # this function communicates via curl with wallet rpc daemon.
-function galilel_bot__wallet_curl() {
+function galilel_bot__curl_wallet() {
 
 	# local variables.
 	local LOCAL__url="${1}"
@@ -218,6 +220,7 @@ function galilel_bot__wallet_curl() {
 
 			# connection error.
 			galilel_bot__printf INFO "${GALILEL_BOT_PROCESS}: failed to connect to RPC wallet"
+			galilel_bot__printf INFO "${GALILEL_BOT_PROCESS}: failed query: '${LOCAL__query}'"
 
 			# return error.
 			return 7
@@ -226,11 +229,74 @@ function galilel_bot__wallet_curl() {
 
 			# http protocol error.
 			galilel_bot__printf INFO "${GALILEL_BOT_PROCESS}: failed to retrieve url from RPC wallet"
+			galilel_bot__printf INFO "${GALILEL_BOT_PROCESS}: failed query: '${LOCAL__query}'"
 
 			# return error.
 			return 22
 		;;
 	esac
+
+	# if no error was found, return zero.
+	return 0
+}
+
+# @_galilel_bot__rpc_getbalance()
+#
+# @_${1}: rpc url
+# @_${2}: rpc username
+# @_${3}: rpc password
+#
+# this function fetches the balance from rpc daemon.
+function galilel_bot__rpc_getbalance() {
+
+	# get wallet balance.
+	galilel_bot__curl_wallet \
+		"${1}" \
+		"${2}" \
+		"${3}" \
+		'{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "getbalance", "params" : [ ] }' || return "${?}"
+
+	# loop through result.
+	while read LOCAL__line ; do
+
+		# get balance information.
+		local LOCAL__balance="$(@JSHON@ -Q -e result -u <<< "${LOCAL__line}")"
+		local LOCAL__balance="$(printf "%.5f" "${LOCAL__balance}")"
+	done <<< "${GLOBAL__result}"
+
+	# export the result:
+	GLOBAL__result="${LOCAL__balance}"
+
+	# if no error was found, return zero.
+	return 0
+}
+
+# @_galilel_bot__rpc_gettransaction()
+#
+# @_${1}: rpc url
+# @_${2}: rpc username
+# @_${3}: rpc password
+# @_${4}: transaction id
+#
+# this function fetches the balance from rpc daemon.
+function galilel_bot__rpc_gettransaction() {
+
+	# get wallet balance.
+	galilel_bot__curl_wallet \
+		"${1}" \
+		"${2}" \
+		"${3}" \
+		'{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "gettransaction", "params" : [ "'"${4}"'" ] }' || return "${?}"
+
+	# loop through result.
+	while read LOCAL__line ; do
+
+		# get balance information.
+		local LOCAL__hex="$(@JSHON@ -Q -e result -e hex -u <<< "${LOCAL__line}")"
+	done <<< "${GLOBAL__result}"
+
+	# export the result:
+	GLOBAL__result="${LOCAL__hex}"
 
 	# if no error was found, return zero.
 	return 0
@@ -263,22 +329,15 @@ function galilel_bot__notification_wallet() {
 		}
 
 		# get wallet balance.
-		galilel_bot__wallet_curl \
-			"${LOCAL__rpc}" \
-			"${LOCAL__username}" \
-			"${LOCAL__password}" \
-			'{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "getbalance", "params" : [ ] }' || return "${?}"
+		galilel_bot__rpc_getbalance "${LOCAL__rpc}" "${LOCAL__username}" "${LOCAL__password}" || return "${?}"
+		local LOCAL__balance="${GLOBAL__result}"
 
-		# loop through result.
-		while read LOCAL__line ; do
-
-			# get balance information.
-			local LOCAL__balance="$(@JSHON@ -Q -e result -u <<< "${LOCAL__line}")"
-			local LOCAL__balance="$(printf "%.5f" "${LOCAL__balance}")"
-		done <<< "${GLOBAL__result}"
+		# get wallet balance.
+		galilel_bot__rpc_gettransaction "${LOCAL__rpc}" "${LOCAL__username}" "${LOCAL__password}" "${2}" || return "${?}"
+		local LOCAL__transaction="${GLOBAL__result}"
 
 		# check if we found a pos block (staking).
-		galilel_bot__wallet_curl \
+		galilel_bot__curl_wallet \
 			"${LOCAL__rpc}" \
 			"${LOCAL__username}" \
 			"${LOCAL__password}" \
@@ -312,7 +371,7 @@ function galilel_bot__notification_wallet() {
 						galilel_bot__printf FILE "Received donation of **'"${LOCAL__amount}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'"
 
 						# push block notification to discord.
-						galilel_bot__discord_curl \
+						galilel_bot__curl_discord \
 							"https://discordapp.com/api/webhooks" \
 							"${GLOBAL__parameter_wallet_webhook_id}" \
 							"${GLOBAL__parameter_wallet_webhook_token}" \
@@ -343,7 +402,7 @@ function galilel_bot__notification_wallet() {
 					galilel_bot__printf FILE "Received staking reward **'"${LOCAL__reward}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'"
 
 					# push block notification to discord.
-					galilel_bot__discord_curl \
+					galilel_bot__curl_discord \
 						"https://discordapp.com/api/webhooks" \
 						"${GLOBAL__parameter_wallet_webhook_id}" \
 						"${GLOBAL__parameter_wallet_webhook_token}" \
@@ -384,7 +443,7 @@ function galilel_bot__notification_block() {
 		}
 
 		# fetch block information.
-		galilel_bot__wallet_curl \
+		galilel_bot__curl_wallet \
 			"${LOCAL__rpc}" \
 			"${LOCAL__username}" \
 			"${LOCAL__password}" \
@@ -414,7 +473,7 @@ function galilel_bot__notification_block() {
 				galilel_bot__printf FILE "New block **'"${LOCAL__height}"'** at **'"${LOCAL__date}"'** with difficulty **'"${LOCAL__difficulty}"'**"
 
 				# push block notification to discord.
-				galilel_bot__discord_curl \
+				galilel_bot__curl_discord \
 					"https://discordapp.com/api/webhooks" \
 					"${GLOBAL__parameter_block_webhook_id}" \
 					"${GLOBAL__parameter_block_webhook_token}" \
