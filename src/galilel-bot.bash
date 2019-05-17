@@ -361,14 +361,11 @@ function galilel_bot__notification_wallet() {
 					# get amount.
 					local LOCAL__amount="$(@JSHON@ -Q -e result -e details -a -e amount -u <<< "${LOCAL__line}")"
 
-					# check if in test mode.
-					[ "${GLOBAL__parameter_test}" == "enabled" ] && {
-						galilel_bot__printf INFO "Received donation of **'"${LOCAL__amount}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'"
-					}
+					# show information.
+					galilel_bot__printf INFO "Received donation of **'"${LOCAL__amount}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'"
 
 					# check if in production mode.
 					[ "${GLOBAL__parameter_test}" == "disabled" ] && {
-						galilel_bot__printf FILE "Received donation of **'"${LOCAL__amount}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'"
 
 						# push block notification to discord.
 						galilel_bot__curl_discord \
@@ -392,14 +389,11 @@ function galilel_bot__notification_wallet() {
 				local LOCAL__reward="$(echo "${LOCAL__fee}" + "${LOCAL__amount}" | @BC@)"
 				local LOCAL__reward="$(printf "%.5f" "${LOCAL__reward}")"
 
-				# check if in test mode.
-				[ "${GLOBAL__parameter_test}" == "enabled" ] && {
-					galilel_bot__printf INFO "Received staking reward **'"${LOCAL__reward}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'"
-				}
+				# show information.
+				galilel_bot__printf INFO "Received staking reward **'"${LOCAL__reward}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'"
 
 				# check if in production mode.
 				[ "${GLOBAL__parameter_test}" == "disabled" ] && {
-					galilel_bot__printf FILE "Received staking reward **'"${LOCAL__reward}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'"
 
 					# push block notification to discord.
 					galilel_bot__curl_discord \
@@ -463,14 +457,11 @@ function galilel_bot__notification_block() {
 			# format variables.
 			local LOCAL__difficulty="$(printf "%.2f" "${LOCAL__difficulty}")"
 
-			# check if in test mode.
-			[ "${GLOBAL__parameter_test}" == "enabled" ] && {
-				galilel_bot__printf INFO "New block **'"${LOCAL__height}"'** at **'"${LOCAL__date}"'** with difficulty **'"${LOCAL__difficulty}"'**"
-			}
+			# show information.
+			galilel_bot__printf INFO "New block **'"${LOCAL__height}"'** at **'"${LOCAL__date}"'** with difficulty **'"${LOCAL__difficulty}"'**"
 
 			# check if in production mode.
 			[ "${GLOBAL__parameter_test}" == "disabled" ] && {
-				galilel_bot__printf FILE "New block **'"${LOCAL__height}"'** at **'"${LOCAL__date}"'** with difficulty **'"${LOCAL__difficulty}"'**"
 
 				# push block notification to discord.
 				galilel_bot__curl_discord \
