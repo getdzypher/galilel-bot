@@ -57,16 +57,6 @@ function galilel_bot__printf() {
 		HELP)
 			echo -e "${@}"
 		;;
-		INFO)
-
-			# console output.
-			echo -e "${@}"
-
-			# check if we should write to logfile.
-			[ -n "${GLOBAL__parameter_logfile}" ] && {
-				echo -e "$(@DATE@ '+%b %e %H:%M:%S')" "${HOSTNAME}" "${GALILEL_BOT_PROCESS}[$$]:" "${FUNCNAME[1]##*__}() ${@}" >> "${GLOBAL__parameter_logfile}"
-			}
-		;;
 		FILE)
 
 			# check if we should write debug output to console.
@@ -360,7 +350,7 @@ function galilel_bot__notification_wallet() {
 					local LOCAL__amount="$(@JSHON@ -Q -e result -e details -a -e amount -u <<< "${LOCAL__line}")"
 
 					# show information.
-					galilel_bot__printf INFO "Received donation of **'"${LOCAL__amount}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'"
+					galilel_bot__printf FILE "Received donation of **'"${LOCAL__amount}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'"
 
 					# check if in production mode.
 					[ "${GLOBAL__parameter_test}" == "disabled" ] && {
@@ -388,7 +378,7 @@ function galilel_bot__notification_wallet() {
 				local LOCAL__reward="$(printf "%.5f" "${LOCAL__reward}")"
 
 				# show information.
-				galilel_bot__printf INFO "Received staking reward **'"${LOCAL__reward}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'"
+				galilel_bot__printf FILE "Received staking reward **'"${LOCAL__reward}"'** '"${LOCAL__coin}"' with new balance of **'"${LOCAL__balance}"'** '"${LOCAL__coin}"'"
 
 				# check if in production mode.
 				[ "${GLOBAL__parameter_test}" == "disabled" ] && {
@@ -456,7 +446,7 @@ function galilel_bot__notification_block() {
 			local LOCAL__difficulty="$(printf "%.2f" "${LOCAL__difficulty}")"
 
 			# show information.
-			galilel_bot__printf INFO "New block **'"${LOCAL__height}"'** at **'"${LOCAL__date}"'** with difficulty **'"${LOCAL__difficulty}"'**"
+			galilel_bot__printf FILE "New block **'"${LOCAL__height}"'** at **'"${LOCAL__date}"'** with difficulty **'"${LOCAL__difficulty}"'**"
 
 			# check if in production mode.
 			[ "${GLOBAL__parameter_test}" == "disabled" ] && {
