@@ -38,6 +38,9 @@ declare -g GLOBAL__parameter_block_webhook_token
 # global result variable.
 declare -g GLOBAL__result
 
+# global curl value.
+declare -g GLOBAL__curl
+
 # @_galilel_bot__printf()
 #
 # @_${1}: log level
@@ -135,7 +138,7 @@ function galilel_bot__curl_discord() {
 
 	# debug output.
 	galilel_bot__printf FILE "starting"
- 
+
 	# local variables.
 	local LOCAL__url="${1}"
 	local LOCAL__id="${2}"
@@ -145,7 +148,7 @@ function galilel_bot__curl_discord() {
 	# query output.
 	galilel_bot__printf FILE "json query: '${LOCAL__query}'"
 
-	GLOBAL__result="$(@CURL@ \
+	GLOBAL__curl="$(@CURL@ \
 		--request POST \
 		--max-time 5 \
 		--silent \
@@ -204,7 +207,7 @@ function galilel_bot__curl_wallet() {
 	# query output.
 	galilel_bot__printf FILE "json query: '${LOCAL__query}'"
 
-	GLOBAL__result="$(@CURL@ \
+	GLOBAL__curl="$(@CURL@ \
 		--request POST \
 		--max-time 5 \
 		--silent \
@@ -267,7 +270,7 @@ function galilel_bot__rpc_get_balance() {
 		# get balance information.
 		local LOCAL__balance="$(@JSHON@ -Q -e result -u <<< "${LOCAL__line}")"
 		local LOCAL__balance="$(printf "%.5f" "${LOCAL__balance}")"
-	done <<< "${GLOBAL__result}"
+	done <<< "${GLOBAL__curl}"
 
 	# export the result:
 	GLOBAL__result="${LOCAL__balance}"
@@ -302,12 +305,63 @@ function galilel_bot__rpc_get_transaction() {
 	# loop through result.
 	while read LOCAL__line ; do
 
-		# get balance information.
+		# get transaction information.
 		local LOCAL__hex="$(@JSHON@ -Q -e result -e hex -u <<< "${LOCAL__line}")"
-	done <<< "${GLOBAL__result}"
+	done <<< "${GLOBAL__curl}"
 
 	# export the result:
 	GLOBAL__result="${LOCAL__hex}"
+
+	# debug output.
+	galilel_bot__printf FILE "successful"
+
+	# if no error was found, return zero.
+	return 0
+}
+
+# @_galilel_bot__rpc_get_amount()
+#
+# @_${1}: rpc url
+# @_${2}: rpc username
+# @_${3}: rpc password
+# @_${4}: wallet transaction
+# @_${5}: wallet address
+#
+# this function fetches the amount of transaction for monitored wallet address from rpc daemon.
+function galilel_bot__rpc_get_amount() {
+
+	# debug output.
+	galilel_bot__printf FILE "starting"
+
+	# get wallet balance.
+	galilel_bot__curl_wallet \
+		"${1}" \
+		"${2}" \
+		"${3}" \
+		'{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "decoderawtransaction", "params" : [ "'"${4}"'" ] }' || return "${?}"
+
+	# loop through result.
+	while read LOCAL__line ; do
+
+		# get address information.
+		declare -a LOCAL__addresses=($(@JSHON@ -Q -e result -e vout -a -e scriptPubKey -e addresses -e 0 -u <<< "${LOCAL__line}"))
+
+		# get value information.
+		declare -a LOCAL__values=($(@JSHON@ -Q -e result -e vout -a -e value -u <<< "${LOCAL__line}"))
+	done <<< "${GLOBAL__curl}"
+
+	# loop through array.
+	local LOCAL__index
+	for (( LOCAL__index = 0; LOCAL__index < "${#LOCAL__addresses[@]}" ; LOCAL__index++ )) ; do
+
+		# check if address matches.
+		[ "${5}" == "${LOCAL__addresses[${LOCAL__index}]}" ] && {
+
+			# export the result:
+			GLOBAL__result="${LOCAL__values[${LOCAL__index}]}"
+			GLOBAL__result="$(printf "%.5f" "${GLOBAL__result}")"
+		}
+	done
 
 	# debug output.
 	galilel_bot__printf FILE "successful"
@@ -349,9 +403,13 @@ function galilel_bot__notification_wallet() {
 		galilel_bot__rpc_get_balance "${LOCAL__rpc}" "${LOCAL__username}" "${LOCAL__password}" || return "${?}"
 		local LOCAL__balance="${GLOBAL__result}"
 
-		# get wallet balance.
+		# get raw transaction.
 		galilel_bot__rpc_get_transaction "${LOCAL__rpc}" "${LOCAL__username}" "${LOCAL__password}" "${2}" || return "${?}"
 		local LOCAL__transaction="${GLOBAL__result}"
+
+		# get amount of transaction.
+		galilel_bot__rpc_get_amount "${LOCAL__rpc}" "${LOCAL__username}" "${LOCAL__password}" "${LOCAL__transaction}" "${LOCAL__address}" || return "${?}"
+		local LOCAL__amount="${GLOBAL__result}"
 
 		# check if we found a pos block (staking).
 		galilel_bot__curl_wallet \
