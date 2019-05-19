@@ -329,10 +329,11 @@ function galilel_bot__rpc_get_transaction() {
 
 		# get transaction information.
 		local LOCAL__hex="$(@JSHON@ -Q -e result -e hex -u <<< "${LOCAL__line}")"
+		local LOCAL__confirmations="$(@JSHON@ -Q -e result -e confirmations -u <<< "${LOCAL__line}")"
 	done <<< "${GLOBAL__curl}"
 
 	# export the result.
-	GLOBAL__result=("${LOCAL__hex}")
+	GLOBAL__result=("${LOCAL__hex}" "${LOCAL__confirmations}")
 
 	# debug output.
 	galilel_bot__printf FILE "successful"
@@ -526,6 +527,7 @@ function galilel_bot__notification_wallet() {
 		# get raw transaction.
 		galilel_bot__rpc_get_transaction "${LOCAL__rpc}" "${LOCAL__username}" "${LOCAL__password}" "${LOCAL__transaction_id}" || return "${?}"
 		local LOCAL__transaction="${GLOBAL__result[0]}"
+		local LOCAL__confirmations="${GLOBAL__result[1]}"
 
 		# get amount of transaction.
 		galilel_bot__rpc_get_amount "${LOCAL__rpc}" "${LOCAL__username}" "${LOCAL__password}" "${LOCAL__transaction}" "${LOCAL__address}" || return "${?}"
@@ -558,7 +560,7 @@ function galilel_bot__notification_wallet() {
 		}
 
 		# check if we received a transaction (transfer).
-		[ -n "${LOCAL__amount}" ] && {
+		[ -n "${LOCAL__amount}" ] && [ "${LOCAL__confirmations}" -gt "0" ] && {
 
 			# show information.
 			galilel_bot__printf FILE "${GLOBAL__parameter_text_transfer}" "${LOCAL__amount}" "${LOCAL__coin}" "${LOCAL__balance}" "${LOCAL__coin}"
