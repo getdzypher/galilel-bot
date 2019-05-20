@@ -329,155 +329,30 @@ function galilel_bot__rpc_get_transaction() {
 	while read LOCAL__line ; do
 
 		# get transaction information.
-		local LOCAL__hex="$(@JSHON@ -Q -e result -e hex -u <<< "${LOCAL__line}")"
 		local LOCAL__confirmations="$(@JSHON@ -Q -e result -e confirmations -u <<< "${LOCAL__line}")"
-	done <<< "${GLOBAL__curl}"
-
-	# export the result.
-	GLOBAL__result=("${LOCAL__hex}" "${LOCAL__confirmations}")
-
-	# debug output.
-	galilel_bot__printf FILE "successful"
-
-	# if no error was found, return zero.
-	return 0
-}
-
-# @_galilel_bot__rpc_get_transfer_in()
-#
-# @_${1}: rpc url
-# @_${2}: rpc username
-# @_${3}: rpc password
-# @_${4}: wallet transaction
-# @_${5}: wallet address
-#
-# this function fetches the transfer amount of incoming transaction for monitored wallet address from rpc daemon.
-function galilel_bot__rpc_get_transfer_in() {
-
-	# debug output.
-	galilel_bot__printf FILE "starting"
-
-	# clear variable.
-	unset GLOBAL__result
-
-	# get wallet transaction amount.
-	galilel_bot__curl_wallet \
-		"${1}" \
-		"${2}" \
-		"${3}" \
-		'{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "decoderawtransaction", "params" : [ "'"${4}"'" ] }' || return "${?}"
-
-	# loop through result.
-	while read LOCAL__line ; do
-
-		# get address information.
-		declare -a LOCAL__addresses=($(@JSHON@ -Q -e result -e vout -a -e scriptPubKey -e addresses -e 0 -u <<< "${LOCAL__line}"))
-
-		# get value information.
-		declare -a LOCAL__values=($(@JSHON@ -Q -e result -e vout -a -e value -u <<< "${LOCAL__line}"))
-	done <<< "${GLOBAL__curl}"
-
-	# loop through array.
-	local LOCAL__index
-	for (( LOCAL__index = 0; LOCAL__index < "${#LOCAL__addresses[@]}" ; LOCAL__index++ )) ; do
-
-		# check if address matches.
-		[ "${5}" == "${LOCAL__addresses[${LOCAL__index}]}" ] && {
-
-			# export the result.
-			GLOBAL__result=("${LOCAL__values[${LOCAL__index}]}")
-			GLOBAL__result=("$(printf "%.5f" "${GLOBAL__result[0]}")")
-		}
-	done
-
-	# debug output.
-	galilel_bot__printf FILE "successful"
-
-	# if no error was found, return zero.
-	return 0
-}
-
-# @_galilel_bot__rpc_get_transfer_out()
-#
-# @_${1}: rpc url
-# @_${2}: rpc username
-# @_${3}: rpc password
-# @_${4}: wallet transaction
-#
-# this function fetches the transfer amount of outgoing transaction for monitored wallet from rpc daemon.
-function galilel_bot__rpc_get_transfer_out() {
-
-	# debug output.
-	galilel_bot__printf FILE "starting"
-
-	# clear variable.
-	unset GLOBAL__result
-
-	# get wallet transaction amount.
-	galilel_bot__curl_wallet \
-		"${1}" \
-		"${2}" \
-		"${3}" \
-		'{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "decoderawtransaction", "params" : [ "'"${4}"'" ] }' || return "${?}"
-
-	# loop through result.
-	while read LOCAL__line ; do
-
-		# get value information.
-		declare -a LOCAL__values=($(@JSHON@ -Q -e result -e vout -a -e value -u <<< "${LOCAL__line}"))
-	done <<< "${GLOBAL__curl}"
-
-	# export the result.
-	GLOBAL__result=("$(IFS="+"; @BC@ <<< "${LOCAL__values[@]}")")
-	GLOBAL__result=("$(printf "%.5f" "${GLOBAL__result[0]}")")
-	GLOBAL__result=("${GLOBAL__result[0]/#-/}")
-
-	# debug output.
-	galilel_bot__printf FILE "successful"
-
-	# if no error was found, return zero.
-	return 0
-}
-
-# @_galilel_bot__rpc_get_reward()
-#
-# @_${1}: rpc url
-# @_${2}: rpc username
-# @_${3}: rpc password
-# @_${4}: transaction id
-#
-# this function fetches the reward amount of transaction for monitored wallet from rpc daemon.
-function galilel_bot__rpc_get_reward() {
-
-	# debug output.
-	galilel_bot__printf FILE "starting"
-
-	# clear variable.
-	unset GLOBAL__result
-
-	# get wallet transaction reward.
-	galilel_bot__curl_wallet \
-		"${1}" \
-		"${2}" \
-		"${3}" \
-		'{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "gettransaction", "params" : [ "'"${4}"'" ] }' || return "${?}"
-
-	# loop through result.
-	while read LOCAL__line ; do
-
-		# get transaction information.
 		local LOCAL__generated="$(@JSHON@ -Q -e result -e generated -u <<< "${LOCAL__line}")"
 		local LOCAL__amount="$(@JSHON@ -Q -e result -e amount -u <<< "${LOCAL__line}")"
 		local LOCAL__fee="$(@JSHON@ -Q -e result -e fee -u <<< "${LOCAL__line}")"
 	done <<< "${GLOBAL__curl}"
 
-	# check if the block was generated.
-	[ "${LOCAL__generated}" == "true" ] && {
-
-		# calculate reward.
-		GLOBAL__result=("$(echo "${LOCAL__fee}" + "${LOCAL__amount}" | @BC@)")
-		GLOBAL__result=("$(printf "%.5f" "${GLOBAL__result[0]}")")
+	# check type if in, out or mining reward.
+	[ "${LOCAL__amount}" == "-" ] && {
+		local LOCAL__type="transfer-out"
 	}
+	[ "${LOCAL__amount}" != "-" ] && {
+		local LOCAL__type="transfer-in"
+	}
+	[ "${LOCAL__generated}" == "true" ] && [ "${LOCAL__confirmations}" != "0" ] && {
+		local LOCAL__type="reward-mining"
+	}
+
+	# calculate amount.
+	GLOBAL__result=("$(echo "${LOCAL__fee:-0}" + "${LOCAL__amount:-0}" | @BC@)")
+	GLOBAL__result=("$(printf "%.5f" "${GLOBAL__result[0]}")")
+	GLOBAL__result=("${GLOBAL__result[0]/#-/}")
+
+	# export the result.
+	GLOBAL__result=("${GLOBAL__result[0]}" "${LOCAL__type:-unknown}")
 
 	# debug output.
 	galilel_bot__printf FILE "successful"
@@ -569,26 +444,14 @@ function galilel_bot__notification_wallet() {
 
 		# get raw transaction.
 		galilel_bot__rpc_get_transaction "${LOCAL__rpc}" "${LOCAL__username}" "${LOCAL__password}" "${LOCAL__transaction_id}" || return "${?}"
-		local LOCAL__hex="${GLOBAL__result[0]}"
-		local LOCAL__confirmations="${GLOBAL__result[1]}"
-
-		# get amount of incoming transaction.
-		galilel_bot__rpc_get_transfer_in "${LOCAL__rpc}" "${LOCAL__username}" "${LOCAL__password}" "${LOCAL__hex}" "${LOCAL__address}" || return "${?}"
-		local LOCAL__amount_in="${GLOBAL__result[0]}"
-
-		# get amount of outgoing transaction.
-		galilel_bot__rpc_get_transfer_out "${LOCAL__rpc}" "${LOCAL__username}" "${LOCAL__password}" "${LOCAL__hex}" || return "${?}"
-		local LOCAL__amount_out="${GLOBAL__result[0]}"
-
-		# get amount of reward.
-		galilel_bot__rpc_get_reward "${LOCAL__rpc}" "${LOCAL__username}" "${LOCAL__password}" "${LOCAL__transaction_id}" || return "${?}"
-		local LOCAL__reward="${GLOBAL__result[0]}"
+		local LOCAL__amount="${GLOBAL__result[0]}"
+		local LOCAL__type="${GLOBAL__result[1]}"
 
 		# check if we found a pos block (staking).
-		[ -n "${LOCAL__reward}" ] && {
+		[ "${LOCAL__type}" == "reward-mining" ] && {
 
 			# show information.
-			galilel_bot__printf FILE "${GLOBAL__parameter_text_reward}" "${LOCAL__reward}" "${LOCAL__coin}" "${LOCAL__balance}" "${LOCAL__coin}"
+			galilel_bot__printf FILE "${GLOBAL__parameter_text_reward}" "${LOCAL__amount}" "${LOCAL__coin}" "${LOCAL__balance}" "${LOCAL__coin}"
 
 			# check if in production mode.
 			[ "${GLOBAL__parameter_test}" == "disabled" ] && {
@@ -599,7 +462,7 @@ function galilel_bot__notification_wallet() {
 					"${GLOBAL__parameter_wallet_webhook_id}" \
 					"${GLOBAL__parameter_wallet_webhook_token}" \
 					"${GLOBAL__parameter_text_reward}" \
-					"${LOCAL__reward}" \
+					"${LOCAL__amount}" \
 					"${LOCAL__coin}" \
 					"${LOCAL__balance}" \
 					"${LOCAL__coin}"
@@ -607,10 +470,10 @@ function galilel_bot__notification_wallet() {
 		}
 
 		# check if we received a transaction (transfer).
-		[ -n "${LOCAL__amount_in}" ] && [ "${LOCAL__confirmations}" -gt "0" ] && {
+		[ "${LOCAL__type}" == "transfer-in" ] && {
 
 			# show information.
-			galilel_bot__printf FILE "${GLOBAL__parameter_text_transfer_in}" "${LOCAL__amount_in}" "${LOCAL__coin}" "${LOCAL__balance}" "${LOCAL__coin}"
+			galilel_bot__printf FILE "${GLOBAL__parameter_text_transfer_in}" "${LOCAL__amount}" "${LOCAL__coin}" "${LOCAL__balance}" "${LOCAL__coin}"
 
 			# check if in production mode.
 			[ "${GLOBAL__parameter_test}" == "disabled" ] && {
@@ -621,7 +484,7 @@ function galilel_bot__notification_wallet() {
 					"${GLOBAL__parameter_wallet_webhook_id}" \
 					"${GLOBAL__parameter_wallet_webhook_token}" \
 					"${GLOBAL__parameter_text_transfer_in}" \
-					"${LOCAL__amount_in}" \
+					"${LOCAL__amount}" \
 					"${LOCAL__coin}" \
 					"${LOCAL__balance}" \
 					"${LOCAL__coin}"
@@ -629,10 +492,10 @@ function galilel_bot__notification_wallet() {
 		}
 
 		# check if we spend a transaction (transfer).
-		[ -n "${LOCAL__amount_out}" ] && [ "${LOCAL__confirmations}" -gt "0" ] && {
+		[ "${LOCAL__type}" == "transfer-out" ] && {
 
 			# show information.
-			galilel_bot__printf FILE "${GLOBAL__parameter_text_transfer_out}" "${LOCAL__amount_in}" "${LOCAL__coin}" "${LOCAL__balance}" "${LOCAL__coin}"
+			galilel_bot__printf FILE "${GLOBAL__parameter_text_transfer_out}" "${LOCAL__amount}" "${LOCAL__coin}" "${LOCAL__balance}" "${LOCAL__coin}"
 
 			# check if in production mode.
 			[ "${GLOBAL__parameter_test}" == "disabled" ] && {
@@ -643,7 +506,7 @@ function galilel_bot__notification_wallet() {
 					"${GLOBAL__parameter_wallet_webhook_id}" \
 					"${GLOBAL__parameter_wallet_webhook_token}" \
 					"${GLOBAL__parameter_text_transfer_out}" \
-					"${LOCAL__amount_out}" \
+					"${LOCAL__amount}" \
 					"${LOCAL__coin}" \
 					"${LOCAL__balance}" \
 					"${LOCAL__coin}"
