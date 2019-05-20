@@ -16,5 +16,6 @@ DISCORD_BLOCK_WEBHOOK_TOKEN="94TsRdZNTa1neShJQ9pA7baGRx2yrY1P8EVZmQM0ubhkQKzIiua
 
 # notification texts (if number of %s is changed, behavior is unknown).
 TEXT_REWARD="Received staking reward **%s** %s with new balance of **%s** %s"
-TEXT_TRANSFER="Received donation of **%s** %s with new balance of **%s** %s"
+TEXT_TRANSFER_IN="Received donation of **%s** %s with new balance of **%s** %s"
+TEXT_TRANSFER_OUT="Spend **%s** %s with new balance of **%s** %s"
 TEXT_BLOCK="New block **%s** at **%s** with difficulty **%s**"

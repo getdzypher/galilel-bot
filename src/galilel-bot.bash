@@ -35,7 +35,8 @@ declare -g GLOBAL__parameter_wallet_webhook_token
 declare -g GLOBAL__parameter_block_webhook_id
 declare -g GLOBAL__parameter_block_webhook_token
 declare -g GLOBAL__parameter_text_reward
-declare -g GLOBAL__parameter_text_transfer
+declare -g GLOBAL__parameter_text_transfer_in
+declare -g GLOBAL__parameter_text_transfer_out
 declare -g GLOBAL__parameter_text_block
 
 # global result variable.
@@ -342,7 +343,7 @@ function galilel_bot__rpc_get_transaction() {
 	return 0
 }
 
-# @_galilel_bot__rpc_get_amount()
+# @_galilel_bot__rpc_get_transfer_in()
 #
 # @_${1}: rpc url
 # @_${2}: rpc username
@@ -350,8 +351,8 @@ function galilel_bot__rpc_get_transaction() {
 # @_${4}: wallet transaction
 # @_${5}: wallet address
 #
-# this function fetches the amount of transaction for monitored wallet address from rpc daemon.
-function galilel_bot__rpc_get_amount() {
+# this function fetches the transfer amount of incoming transaction for monitored wallet address from rpc daemon.
+function galilel_bot__rpc_get_transfer_in() {
 
 	# debug output.
 	galilel_bot__printf FILE "starting"
@@ -396,6 +397,48 @@ function galilel_bot__rpc_get_amount() {
 	return 0
 }
 
+# @_galilel_bot__rpc_get_transfer_out()
+#
+# @_${1}: rpc url
+# @_${2}: rpc username
+# @_${3}: rpc password
+# @_${4}: wallet transaction
+#
+# this function fetches the transfer amount of outgoing transaction for monitored wallet from rpc daemon.
+function galilel_bot__rpc_get_transfer_out() {
+
+	# debug output.
+	galilel_bot__printf FILE "starting"
+
+	# clear variable.
+	unset GLOBAL__result
+
+	# get wallet transaction amount.
+	galilel_bot__curl_wallet \
+		"${1}" \
+		"${2}" \
+		"${3}" \
+		'{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "decoderawtransaction", "params" : [ "'"${4}"'" ] }' || return "${?}"
+
+	# loop through result.
+	while read LOCAL__line ; do
+
+		# get value information.
+		declare -a LOCAL__values=($(@JSHON@ -Q -e result -e vout -a -e value -u <<< "${LOCAL__line}"))
+	done <<< "${GLOBAL__curl}"
+
+	# export the result.
+	GLOBAL__result=("$(IFS="+"; @BC@ <<< "${LOCAL__values[@]}")")
+	GLOBAL__result=("$(printf "%.5f" "${GLOBAL__result[0]}")")
+	GLOBAL__result=("${GLOBAL__result[0]/#-/}")
+
+	# debug output.
+	galilel_bot__printf FILE "successful"
+
+	# if no error was found, return zero.
+	return 0
+}
+
 # @_galilel_bot__rpc_get_reward()
 #
 # @_${1}: rpc url
@@ -403,7 +446,7 @@ function galilel_bot__rpc_get_amount() {
 # @_${3}: rpc password
 # @_${4}: transaction id
 #
-# this function fetches the reward amount of transaction for monitored wallet address from rpc daemon.
+# this function fetches the reward amount of transaction for monitored wallet from rpc daemon.
 function galilel_bot__rpc_get_reward() {
 
 	# debug output.
@@ -526,12 +569,16 @@ function galilel_bot__notification_wallet() {
 
 		# get raw transaction.
 		galilel_bot__rpc_get_transaction "${LOCAL__rpc}" "${LOCAL__username}" "${LOCAL__password}" "${LOCAL__transaction_id}" || return "${?}"
-		local LOCAL__transaction="${GLOBAL__result[0]}"
+		local LOCAL__hex="${GLOBAL__result[0]}"
 		local LOCAL__confirmations="${GLOBAL__result[1]}"
 
-		# get amount of transaction.
-		galilel_bot__rpc_get_amount "${LOCAL__rpc}" "${LOCAL__username}" "${LOCAL__password}" "${LOCAL__transaction}" "${LOCAL__address}" || return "${?}"
-		local LOCAL__amount="${GLOBAL__result[0]}"
+		# get amount of incoming transaction.
+		galilel_bot__rpc_get_transfer_in "${LOCAL__rpc}" "${LOCAL__username}" "${LOCAL__password}" "${LOCAL__hex}" "${LOCAL__address}" || return "${?}"
+		local LOCAL__amount_in="${GLOBAL__result[0]}"
+
+		# get amount of outgoing transaction.
+		galilel_bot__rpc_get_transfer_out "${LOCAL__rpc}" "${LOCAL__username}" "${LOCAL__password}" "${LOCAL__hex}" || return "${?}"
+		local LOCAL__amount_out="${GLOBAL__result[0]}"
 
 		# get amount of reward.
 		galilel_bot__rpc_get_reward "${LOCAL__rpc}" "${LOCAL__username}" "${LOCAL__password}" "${LOCAL__transaction_id}" || return "${?}"
@@ -560,10 +607,10 @@ function galilel_bot__notification_wallet() {
 		}
 
 		# check if we received a transaction (transfer).
-		[ -n "${LOCAL__amount}" ] && [ "${LOCAL__confirmations}" -gt "0" ] && {
+		[ -n "${LOCAL__amount_in}" ] && [ "${LOCAL__confirmations}" -gt "0" ] && {
 
 			# show information.
-			galilel_bot__printf FILE "${GLOBAL__parameter_text_transfer}" "${LOCAL__amount}" "${LOCAL__coin}" "${LOCAL__balance}" "${LOCAL__coin}"
+			galilel_bot__printf FILE "${GLOBAL__parameter_text_transfer_in}" "${LOCAL__amount_in}" "${LOCAL__coin}" "${LOCAL__balance}" "${LOCAL__coin}"
 
 			# check if in production mode.
 			[ "${GLOBAL__parameter_test}" == "disabled" ] && {
@@ -573,8 +620,30 @@ function galilel_bot__notification_wallet() {
 					"https://discordapp.com/api/webhooks" \
 					"${GLOBAL__parameter_wallet_webhook_id}" \
 					"${GLOBAL__parameter_wallet_webhook_token}" \
-					"${GLOBAL__parameter_text_transfer}" \
-					"${LOCAL__amount}" \
+					"${GLOBAL__parameter_text_transfer_in}" \
+					"${LOCAL__amount_in}" \
+					"${LOCAL__coin}" \
+					"${LOCAL__balance}" \
+					"${LOCAL__coin}"
+			}
+		}
+
+		# check if we spend a transaction (transfer).
+		[ -n "${LOCAL__amount_out}" ] && [ "${LOCAL__confirmations}" -gt "0" ] && {
+
+			# show information.
+			galilel_bot__printf FILE "${GLOBAL__parameter_text_transfer_out}" "${LOCAL__amount_in}" "${LOCAL__coin}" "${LOCAL__balance}" "${LOCAL__coin}"
+
+			# check if in production mode.
+			[ "${GLOBAL__parameter_test}" == "disabled" ] && {
+
+				# push wallet notification to discord.
+				galilel_bot__curl_discord \
+					"https://discordapp.com/api/webhooks" \
+					"${GLOBAL__parameter_wallet_webhook_id}" \
+					"${GLOBAL__parameter_wallet_webhook_token}" \
+					"${GLOBAL__parameter_text_transfer_out}" \
+					"${LOCAL__amount_out}" \
 					"${LOCAL__coin}" \
 					"${LOCAL__balance}" \
 					"${LOCAL__coin}"
@@ -676,7 +745,8 @@ function galilel_bot__init() {
 	GLOBAL__parameter_block_webhook_id="${DISCORD_BLOCK_WEBHOOK_ID}"
 	GLOBAL__parameter_block_webhook_token="${DISCORD_BLOCK_WEBHOOK_TOKEN}"
 	GLOBAL__parameter_text_reward="${TEXT_REWARD}"
-	GLOBAL__parameter_text_transfer="${TEXT_TRANSFER}"
+	GLOBAL__parameter_text_transfer_in="${TEXT_TRANSFER_IN}"
+	GLOBAL__parameter_text_transfer_out="${TEXT_TRANSFER_OUT}"
 	GLOBAL__parameter_text_block="${TEXT_BLOCK}"
 
 	# check if logfile is enabled, directory and file is writable.
