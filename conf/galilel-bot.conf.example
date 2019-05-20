@@ -6,6 +6,9 @@ COIN_CONFIGS=(
 	"GALI,http://127.0.0.1:36002,galilel-user,galilel-password,UUr5nDmykhun1HWM7mJAqLVeLzoGtx19dX"
 )
 
+# include watch only addresses, can degrade performance (default is no).
+WATCH_ONLY="no"
+
 # discord webhook (wallet notification bot).
 DISCORD_WALLET_WEBHOOK_ID="823434590193434954"
 DISCORD_WALLET_WEBHOOK_TOKEN="5fbJ3d531IKTk9X706d35R1uovFZfVTcAkDQUp4vjkH5xiLf6FIb2lUe6J4fCqbCdA9v"

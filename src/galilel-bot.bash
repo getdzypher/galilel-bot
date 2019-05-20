@@ -277,12 +277,25 @@ function galilel_bot__rpc_get_balance() {
 	# clear variable.
 	unset GLOBAL__result
 
-	# get wallet balance.
-	galilel_bot__curl_wallet \
-		"${1}" \
-		"${2}" \
-		"${3}" \
-		'{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "getbalance", "params" : [ ] }' || return "${?}"
+	# check if watch only addresses must be included.
+	[ "${GLOBAL__parameter_watch_only}" == "no" ] && {
+
+		# get wallet balance.
+		galilel_bot__curl_wallet \
+			"${1}" \
+			"${2}" \
+			"${3}" \
+			'{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "getbalance", "params" : [ ] }' || return "${?}"
+	}
+	[ "${GLOBAL__parameter_watch_only}" == "yes" ] && {
+
+		# get wallet balance.
+		galilel_bot__curl_wallet \
+			"${1}" \
+			"${2}" \
+			"${3}" \
+			'{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "getbalance", "params" : [ "*", 0, true ] }' || return "${?}"
+	}
 
 	# loop through result.
 	while read LOCAL__line ; do
@@ -318,12 +331,25 @@ function galilel_bot__rpc_get_transaction() {
 	# clear variable.
 	unset GLOBAL__result
 
-	# get wallet transaction.
-	galilel_bot__curl_wallet \
-		"${1}" \
-		"${2}" \
-		"${3}" \
-		'{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "gettransaction", "params" : [ "'"${4}"'" ] }' || return "${?}"
+	# check if watch only addresses must be included.
+	[ "${GLOBAL__parameter_watch_only}" == "no" ] && {
+
+		# get wallet transaction.
+		galilel_bot__curl_wallet \
+			"${1}" \
+			"${2}" \
+			"${3}" \
+			'{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "gettransaction", "params" : [ "'"${4}"'" ] }' || return "${?}"
+	}
+	[ "${GLOBAL__parameter_watch_only}" == "yes" ] && {
+
+		# get wallet transaction.
+		galilel_bot__curl_wallet \
+			"${1}" \
+			"${2}" \
+			"${3}" \
+			'{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "gettransaction", "params" : [ "'"${4}"'", true ] }' || return "${?}"
+	}
 
 	# loop through result.
 	while read LOCAL__line ; do
@@ -625,6 +651,7 @@ function galilel_bot__init() {
 	GLOBAL__parameter_wallet_webhook_token="${DISCORD_WALLET_WEBHOOK_TOKEN}"
 	GLOBAL__parameter_block_webhook_id="${DISCORD_BLOCK_WEBHOOK_ID}"
 	GLOBAL__parameter_block_webhook_token="${DISCORD_BLOCK_WEBHOOK_TOKEN}"
+	GLOBAL__parameter_watch_only="${WATCH_ONLY}"
 	GLOBAL__parameter_text_reward="${TEXT_REWARD}"
 	GLOBAL__parameter_text_transfer_in="${TEXT_TRANSFER_IN}"
 	GLOBAL__parameter_text_transfer_out="${TEXT_TRANSFER_OUT}"
