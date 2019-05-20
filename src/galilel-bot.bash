@@ -335,23 +335,41 @@ function galilel_bot__rpc_get_transaction() {
 		local LOCAL__fee="$(@JSHON@ -Q -e result -e fee -u <<< "${LOCAL__line}")"
 	done <<< "${GLOBAL__curl}"
 
-	# check type if in, out or mining reward.
-	[ "${LOCAL__amount}" == "-" ] && {
+	# check if incoming transaction.
+	[ "${LOCAL__confirmations}" != "0" ] &&
+	[ "${LOCAL__amount:0:1}" == "-" ] && {
+
+		# spend.
 		local LOCAL__type="transfer-out"
-	}
-	[ "${LOCAL__amount}" != "-" ] && {
-		local LOCAL__type="transfer-in"
-	}
-	[ "${LOCAL__generated}" == "true" ] && [ "${LOCAL__confirmations}" != "0" ] && {
-		local LOCAL__type="reward-mining"
+
+		# calculate amount.
+		GLOBAL__result=("${LOCAL__amount/#-/}")
 	}
 
-	# calculate amount.
-	GLOBAL__result=("$(echo "${LOCAL__fee:-0}" + "${LOCAL__amount:-0}" | @BC@)")
-	GLOBAL__result=("$(printf "%.5f" "${GLOBAL__result[0]}")")
-	GLOBAL__result=("${GLOBAL__result[0]/#-/}")
+	# check if outgoing transaction.
+	[ "${LOCAL__confirmations}" != "0" ] &&
+	[ "${LOCAL__amount:0:1}" != "-" ] && {
+
+		# receive.
+		local LOCAL__type="transfer-in"
+
+		# calculate amount.
+		GLOBAL__result=("${LOCAL__amount}")
+	}
+
+	# check if mining reward.
+	[ "${LOCAL__confirmations}" != "0" ] &&
+	[ "${LOCAL__generated}" == "true" ] && {
+
+		# mining reward.
+		local LOCAL__type="reward-mining"
+
+		# calculate amount.
+		GLOBAL__result=("$(printf "%.8f+%.8f\n" "${LOCAL__fee}" "${LOCAL__amount}" | @BC@)")
+	}
 
 	# export the result.
+	GLOBAL__result=("$(printf "%.5f" "${GLOBAL__result[0]}")")
 	GLOBAL__result=("${GLOBAL__result[0]}" "${LOCAL__type:-unknown}")
 
 	# debug output.
