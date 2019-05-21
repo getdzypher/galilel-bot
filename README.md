@@ -72,8 +72,11 @@ Please change the following options to match your requirements:
 ```
 # coin configuration mappings (one per row, format: ticker,rpcurl,rpcuser,rpcpassword,[address]).
 COIN_CONFIGS=(
-	"GALI,http://127.0.0.1:36002,galilel-user,galilel-password,UUr5nDmykhun1HWM7mJAqLVeLzoGtx19dX"
+	"GALI,http://127.0.0.1:36002,galilel-user,galilel-password"
 )
+
+# include watch only addresses, can degrade performance (default is no).
+WATCH_ONLY="no"
 
 # discord webhook (wallet notification bot).
 DISCORD_WALLET_WEBHOOK_ID="823434590193434954"
@@ -85,7 +88,8 @@ DISCORD_BLOCK_WEBHOOK_TOKEN="94TsRdZNTa1neShJQ9pA7baGRx2yrY1P8EVZmQM0ubhkQKzIiua
 
 # notification texts.
 TEXT_REWARD="Received staking reward **%s** %s with new balance of **%s** %s"
-TEXT_TRANSFER="Received donation of **%s** %s with new balance of **%s** %s"
+TEXT_TRANSFER_IN="Received donation of **%s** %s with new balance of **%s** %s"
+TEXT_TRANSFER_OUT="Spend **%s** %s with new balance of **%s** %s"
 TEXT_BLOCK="New block **%s** at **%s** with difficulty **%s**"
 ```
 
