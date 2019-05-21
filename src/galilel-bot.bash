@@ -30,10 +30,6 @@ declare -g GLOBAL__parameter_conffile="@SYSCONFDIR@/galilel/galilel-bot.conf"
 # global variables filled from configuration file.
 declare -g GLOBAL__parameter_logfile
 declare -a GLOBAL__parameter_configs
-declare -g GLOBAL__parameter_wallet_webhook_id
-declare -g GLOBAL__parameter_wallet_webhook_token
-declare -g GLOBAL__parameter_block_webhook_id
-declare -g GLOBAL__parameter_block_webhook_token
 declare -g GLOBAL__parameter_text_reward
 declare -g GLOBAL__parameter_text_transfer_in
 declare -g GLOBAL__parameter_text_transfer_out
@@ -473,12 +469,19 @@ function galilel_bot__notification_wallet() {
 	for (( LOCAL__index = 0; LOCAL__index < "${#GLOBAL__parameter_configs[@]}" ; LOCAL__index++ )) ; do
 
 		# read data into variables.
-		IFS=',' read LOCAL__ticker LOCAL__rpc LOCAL__username LOCAL__password <<< "${GLOBAL__parameter_configs[${LOCAL__index}]}"
+		IFS=',' read LOCAL__ticker LOCAL__rpc LOCAL__username LOCAL__password LOCAL__realm LOCAL__webhook_id LOCAL__webhook_token <<< "${GLOBAL__parameter_configs[${LOCAL__index}]}"
 
 		# check if correct ticker.
 		[ "${LOCAL__coin}" != "${LOCAL__ticker}" ] && {
 
 			# wrong ticker, so continue.
+			continue
+		}
+
+		# check if correct realm.
+		[ "${LOCAL__realm}" != "wt" ] && {
+
+			# wrong realm, so continue.
 			continue
 		}
 
@@ -503,8 +506,8 @@ function galilel_bot__notification_wallet() {
 				# push wallet notification to discord.
 				galilel_bot__curl_discord \
 					"https://discordapp.com/api/webhooks" \
-					"${GLOBAL__parameter_wallet_webhook_id}" \
-					"${GLOBAL__parameter_wallet_webhook_token}" \
+					"${LOCAL__webhook_id}" \
+					"${LOCAL__wallet_webhook_token}" \
 					"${GLOBAL__parameter_text_reward}" \
 					"${LOCAL__amount}" \
 					"${LOCAL__coin}" \
@@ -525,8 +528,8 @@ function galilel_bot__notification_wallet() {
 				# push wallet notification to discord.
 				galilel_bot__curl_discord \
 					"https://discordapp.com/api/webhooks" \
-					"${GLOBAL__parameter_wallet_webhook_id}" \
-					"${GLOBAL__parameter_wallet_webhook_token}" \
+					"${LCAOL__webhook_id}" \
+					"${LOCAL__webhook_token}" \
 					"${GLOBAL__parameter_text_transfer_in}" \
 					"${LOCAL__amount}" \
 					"${LOCAL__coin}" \
@@ -547,8 +550,8 @@ function galilel_bot__notification_wallet() {
 				# push wallet notification to discord.
 				galilel_bot__curl_discord \
 					"https://discordapp.com/api/webhooks" \
-					"${GLOBAL__parameter_wallet_webhook_id}" \
-					"${GLOBAL__parameter_wallet_webhook_token}" \
+					"${LOCAL__webhook_id}" \
+					"${LOCAL__webhook_token}" \
 					"${GLOBAL__parameter_text_transfer_out}" \
 					"${LOCAL__amount}" \
 					"${LOCAL__coin}" \
@@ -585,12 +588,19 @@ function galilel_bot__notification_block() {
 	for (( LOCAL__index = 0; LOCAL__index < "${#GLOBAL__parameter_configs[@]}" ; LOCAL__index++ )) ; do
 
 		# read data into variables.
-		IFS=',' read LOCAL__ticker LOCAL__rpc LOCAL__username LOCAL__password <<< "${GLOBAL__parameter_configs[${LOCAL__index}]}"
+		IFS=',' read LOCAL__ticker LOCAL__rpc LOCAL__username LOCAL__password LOCAL__realm LOCAL__webhook_id LOCAL__webhook_token <<< "${GLOBAL__parameter_configs[${LOCAL__index}]}"
 
 		# check if correct ticker.
 		[ "${LOCAL__coin}" != "${LOCAL__ticker}" ] && {
 
 			# wrong ticker, so continue.
+			continue
+		}
+
+		# check if correct realm.
+		[ "${LOCAL__realm}" != "bk" ] && {
+
+			# wrong realm, so continue.
 			continue
 		}
 
@@ -609,8 +619,8 @@ function galilel_bot__notification_block() {
 			# push block notification to discord.
 			galilel_bot__curl_discord \
 				"https://discordapp.com/api/webhooks" \
-				"${GLOBAL__parameter_block_webhook_id}" \
-				"${GLOBAL__parameter_block_webhook_token}" \
+				"${LOCAL__webhook_id}" \
+				"${LOCAL__webhook_token}" \
 				"${GLOBAL__parameter_text_block}" \
 				"${LOCAL__height}" \
 				"${LOCAL__date}" \
@@ -647,10 +657,6 @@ function galilel_bot__init() {
 	# move config options to global variables.
 	GLOBAL__parameter_logfile="${LOGFILE}"
 	GLOBAL__parameter_configs=("${COIN_CONFIGS[@]}")
-	GLOBAL__parameter_wallet_webhook_id="${DISCORD_WALLET_WEBHOOK_ID}"
-	GLOBAL__parameter_wallet_webhook_token="${DISCORD_WALLET_WEBHOOK_TOKEN}"
-	GLOBAL__parameter_block_webhook_id="${DISCORD_BLOCK_WEBHOOK_ID}"
-	GLOBAL__parameter_block_webhook_token="${DISCORD_BLOCK_WEBHOOK_TOKEN}"
 	GLOBAL__parameter_watch_only="${WATCH_ONLY}"
 	GLOBAL__parameter_text_reward="${TEXT_REWARD}"
 	GLOBAL__parameter_text_transfer_in="${TEXT_TRANSFER_IN}"
