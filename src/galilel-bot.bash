@@ -473,7 +473,7 @@ function galilel_bot__notification_wallet() {
 	for (( LOCAL__index = 0; LOCAL__index < "${#GLOBAL__parameter_configs[@]}" ; LOCAL__index++ )) ; do
 
 		# read data into variables.
-		IFS=',' read LOCAL__ticker LOCAL__rpc LOCAL__username LOCAL__password LOCAL__address <<< "${GLOBAL__parameter_configs[${LOCAL__index}]}"
+		IFS=',' read LOCAL__ticker LOCAL__rpc LOCAL__username LOCAL__password <<< "${GLOBAL__parameter_configs[${LOCAL__index}]}"
 
 		# check if correct ticker.
 		[ "${LOCAL__coin}" != "${LOCAL__ticker}" ] && {
@@ -585,7 +585,7 @@ function galilel_bot__notification_block() {
 	for (( LOCAL__index = 0; LOCAL__index < "${#GLOBAL__parameter_configs[@]}" ; LOCAL__index++ )) ; do
 
 		# read data into variables.
-		IFS=',' read LOCAL__ticker LOCAL__rpc LOCAL__username LOCAL__password LOCAL__address <<< "${GLOBAL__parameter_configs[${LOCAL__index}]}"
+		IFS=',' read LOCAL__ticker LOCAL__rpc LOCAL__username LOCAL__password <<< "${GLOBAL__parameter_configs[${LOCAL__index}]}"
 
 		# check if correct ticker.
 		[ "${LOCAL__coin}" != "${LOCAL__ticker}" ] && {

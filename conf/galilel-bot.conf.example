@@ -3,7 +3,7 @@ LOGFILE="@LOCALSTATEDIR@/log/galilel/galilel-bot.log"
 
 # coin configuration mappings (one per row, format: ticker,rpcurl,rpcuser,rpcpassword,[address]).
 COIN_CONFIGS=(
-	"GALI,http://127.0.0.1:36002,galilel-user,galilel-password,UUr5nDmykhun1HWM7mJAqLVeLzoGtx19dX"
+	"GALI,http://127.0.0.1:36002,galilel-user,galilel-password"
 )
 
 # include watch only addresses, can degrade performance (default is no).
