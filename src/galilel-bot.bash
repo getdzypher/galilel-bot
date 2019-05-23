@@ -27,13 +27,8 @@ declare -g GLOBAL__parameter_debug="disabled"
 declare -g GLOBAL__parameter_test="disabled"
 declare -g GLOBAL__parameter_conffile="@SYSCONFDIR@/galilel/galilel-bot.conf"
 
-# global variables filled from configuration file.
-declare -g GLOBAL__parameter_logfile
-declare -a GLOBAL__parameter_configs
-declare -g GLOBAL__parameter_text_reward
-declare -g GLOBAL__parameter_text_transfer_in
-declare -g GLOBAL__parameter_text_transfer_out
-declare -g GLOBAL__parameter_text_block
+# global associative configuration array.
+declare -A COIN_CONFIGS
 
 # global result variable.
 declare -a GLOBAL__result
@@ -69,8 +64,8 @@ function galilel_bot__printf() {
 			}
 
 			# check if we should write to logfile.
-			[ -n "${GLOBAL__parameter_logfile}" ] && {
-				printf "$(/usr/bin/date '+%b %e %H:%M:%S') ${HOSTNAME} ${GALILEL_BOT_PROCESS}[$$]: ${FUNCNAME[1]##*__}() ${LOCAL__text}\n" "${@}" >> "${GLOBAL__parameter_logfile}"
+			[ -n "${LOGFILE}" ] && {
+				printf "$(/usr/bin/date '+%b %e %H:%M:%S') ${HOSTNAME} ${GALILEL_BOT_PROCESS}[$$]: ${FUNCNAME[1]##*__}() ${LOCAL__text}\n" "${@}" >> "${LOGFILE}"
 			}
 		;;
 	esac
@@ -263,6 +258,7 @@ function galilel_bot__curl_wallet() {
 # @_${1}: rpc url
 # @_${2}: rpc username
 # @_${3}: rpc password
+# @_${4}: monitor watch only
 #
 # this function fetches the balance from rpc daemon.
 function galilel_bot__rpc_get_balance() {
@@ -274,7 +270,7 @@ function galilel_bot__rpc_get_balance() {
 	unset GLOBAL__result
 
 	# check if watch only addresses must be included.
-	[ "${GLOBAL__parameter_watch_only}" == "no" ] && {
+	[ "${4}" == "no" ] && {
 
 		# get wallet balance.
 		galilel_bot__curl_wallet \
@@ -283,7 +279,7 @@ function galilel_bot__rpc_get_balance() {
 			"${3}" \
 			'{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "getbalance", "params" : [ ] }' || return "${?}"
 	}
-	[ "${GLOBAL__parameter_watch_only}" == "yes" ] && {
+	[ "${4}" == "yes" ] && {
 
 		# get wallet balance.
 		galilel_bot__curl_wallet \
@@ -316,7 +312,8 @@ function galilel_bot__rpc_get_balance() {
 # @_${1}: rpc url
 # @_${2}: rpc username
 # @_${3}: rpc password
-# @_${4}: transaction id
+# @_${4}: monitor watch only
+# @_${5}: transaction id
 #
 # this function fetches the raw value of a transaction from rpc daemon.
 function galilel_bot__rpc_get_transaction() {
@@ -328,23 +325,23 @@ function galilel_bot__rpc_get_transaction() {
 	unset GLOBAL__result
 
 	# check if watch only addresses must be included.
-	[ "${GLOBAL__parameter_watch_only}" == "no" ] && {
+	[ "${4}" == "no" ] && {
 
 		# get wallet transaction.
 		galilel_bot__curl_wallet \
 			"${1}" \
 			"${2}" \
 			"${3}" \
-			'{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "gettransaction", "params" : [ "'"${4}"'" ] }' || return "${?}"
+			'{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "gettransaction", "params" : [ "'"${5}"'" ] }' || return "${?}"
 	}
-	[ "${GLOBAL__parameter_watch_only}" == "yes" ] && {
+	[ "${4}" == "yes" ] && {
 
 		# get wallet transaction.
 		galilel_bot__curl_wallet \
 			"${1}" \
 			"${2}" \
 			"${3}" \
-			'{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "gettransaction", "params" : [ "'"${4}"'", true ] }' || return "${?}"
+			'{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "gettransaction", "params" : [ "'"${5}"'", true ] }' || return "${?}"
 	}
 
 	# loop through result.
@@ -465,32 +462,67 @@ function galilel_bot__notification_wallet() {
 	local LOCAL__transaction_id="${2}"
 
 	# loop through the configuration array.
-	local LOCAL__index
-	for (( LOCAL__index = 0; LOCAL__index < "${#GLOBAL__parameter_configs[@]}" ; LOCAL__index++ )) ; do
+	local LOCAL__index="0"
+	while [ : ] ; do
 
-		# read data into variables.
-		IFS=',' read LOCAL__ticker LOCAL__rpc LOCAL__username LOCAL__password LOCAL__realm LOCAL__webhook_id LOCAL__webhook_token <<< "${GLOBAL__parameter_configs[${LOCAL__index}]}"
+		# parse variables.
+		local LOCAL__ticker="${COIN_CONFIGS[${LOCAL__index}_TICKER]}"
+		local LOCAL__rpc_url="${COIN_CONFIGS[${LOCAL__index}_RPC_URL]}"
+		local LOCAL__rpc_username="${COIN_CONFIGS[${LOCAL__index}_RPC_USERNAME]}"
+		local LOCAL__rpc_password="${COIN_CONFIGS[${LOCAL__index}_RPC_PASSWORD]}"
+		local LOCAL__monitor_block="${COIN_CONFIGS[${LOCAL__index}_MONITOR_BLOCK]}"
+		local LOCAL__monitor_wallet="${COIN_CONFIGS[${LOCAL__index}_MONITOR_WALLET]}"
+		local LOCAL__monitor_watch_only="${COIN_CONFIGS[${LOCAL__index}_MONITOR_WATCH_ONLY]}"
+		local LOCAL__webhook_id="${COIN_CONFIGS[${LOCAL__index}_WEBHOOK_ID]}"
+		local LOCAL__webhook_token="${COIN_CONFIGS[${LOCAL__index}_WEBHOOK_TOKEN]}"
+		local LOCAL__text_reward="${COIN_CONFIGS[${LOCAL__index}_TEXT_REWARD]}"
+		local LOCAL__text_transfer_in="${COIN_CONFIGS[${LOCAL__index}_TEXT_TRANSFER_IN]}"
+		local LOCAL__text_transfer_out="${COIN_CONFIGS[${LOCAL__index}_TEXT_TRANSFER_OUT]}"
+		local LOCAL__text_block="${COIN_CONFIGS[${LOCAL__index}_TEXT_BLOCK]}"
+
+		# increment counter.
+		((LOCAL__index++))
+
+		# check if end is reached.
+		[ -z "${LOCAL__ticker}" ] && {
+
+			# terminate loop.
+			break
+		}
 
 		# check if correct ticker.
-		[ "${LOCAL__coin}" != "${LOCAL__ticker}" ] && {
+		[ "${LOCAL__ticker}" !=  "${LOCAL__coin}" ] && {
 
 			# wrong ticker, so continue.
 			continue
 		}
 
 		# check if correct realm.
-		[ "${LOCAL__realm}" != "wt" ] && {
+		[ "${LOCAL__monitor_wallet}" != "yes" ] && {
 
 			# wrong realm, so continue.
 			continue
 		}
 
 		# get wallet balance.
-		galilel_bot__rpc_get_balance "${LOCAL__rpc}" "${LOCAL__username}" "${LOCAL__password}" || return "${?}"
+		galilel_bot__rpc_get_balance \
+			"${LOCAL__rpc_url}" \
+			"${LOCAL__rpc_username}" \
+			"${LOCAL__rpc_password}" \
+			"${LOCAL__monitor_watch_only}" || return "${?}"
+
+		# parse result.
 		local LOCAL__balance="${GLOBAL__result[0]}"
 
 		# get raw transaction.
-		galilel_bot__rpc_get_transaction "${LOCAL__rpc}" "${LOCAL__username}" "${LOCAL__password}" "${LOCAL__transaction_id}" || return "${?}"
+		galilel_bot__rpc_get_transaction \
+			"${LOCAL__rpc_url}" \
+			"${LOCAL__rpc_username}" \
+			"${LOCAL__rpc_password}" \
+			"${LOCAL__monitor_watch_only}" \
+			"${LOCAL__transaction_id}" || return "${?}"
+
+		# parse result.
 		local LOCAL__amount="${GLOBAL__result[0]}"
 		local LOCAL__type="${GLOBAL__result[1]}"
 
@@ -498,7 +530,7 @@ function galilel_bot__notification_wallet() {
 		[ "${LOCAL__type}" == "reward-mining" ] && {
 
 			# show information.
-			galilel_bot__printf FILE "${GLOBAL__parameter_text_reward}" "${LOCAL__amount}" "${LOCAL__coin}" "${LOCAL__balance}" "${LOCAL__coin}"
+			galilel_bot__printf FILE "${LOCAL__text_reward}" "${LOCAL__amount}" "${LOCAL__coin}" "${LOCAL__balance}" "${LOCAL__coin}"
 
 			# check if in production mode.
 			[ "${GLOBAL__parameter_test}" == "disabled" ] && {
@@ -507,8 +539,8 @@ function galilel_bot__notification_wallet() {
 				galilel_bot__curl_discord \
 					"https://discordapp.com/api/webhooks" \
 					"${LOCAL__webhook_id}" \
-					"${LOCAL__wallet_webhook_token}" \
-					"${GLOBAL__parameter_text_reward}" \
+					"${LOCAL__webhook_token}" \
+					"${LOCAL__text_reward}" \
 					"${LOCAL__amount}" \
 					"${LOCAL__coin}" \
 					"${LOCAL__balance}" \
@@ -520,7 +552,7 @@ function galilel_bot__notification_wallet() {
 		[ "${LOCAL__type}" == "transfer-in" ] && {
 
 			# show information.
-			galilel_bot__printf FILE "${GLOBAL__parameter_text_transfer_in}" "${LOCAL__amount}" "${LOCAL__coin}" "${LOCAL__balance}" "${LOCAL__coin}"
+			galilel_bot__printf FILE "${LOCAL__text_transfer_in}" "${LOCAL__amount}" "${LOCAL__coin}" "${LOCAL__balance}" "${LOCAL__coin}"
 
 			# check if in production mode.
 			[ "${GLOBAL__parameter_test}" == "disabled" ] && {
@@ -528,9 +560,9 @@ function galilel_bot__notification_wallet() {
 				# push wallet notification to discord.
 				galilel_bot__curl_discord \
 					"https://discordapp.com/api/webhooks" \
-					"${LCAOL__webhook_id}" \
+					"${LOCAL__webhook_id}" \
 					"${LOCAL__webhook_token}" \
-					"${GLOBAL__parameter_text_transfer_in}" \
+					"${LOCAL__text_transfer_in}" \
 					"${LOCAL__amount}" \
 					"${LOCAL__coin}" \
 					"${LOCAL__balance}" \
@@ -542,7 +574,7 @@ function galilel_bot__notification_wallet() {
 		[ "${LOCAL__type}" == "transfer-out" ] && {
 
 			# show information.
-			galilel_bot__printf FILE "${GLOBAL__parameter_text_transfer_out}" "${LOCAL__amount}" "${LOCAL__coin}" "${LOCAL__balance}" "${LOCAL__coin}"
+			galilel_bot__printf FILE "${LOCAL__text_transfer_out}" "${LOCAL__amount}" "${LOCAL__coin}" "${LOCAL__balance}" "${LOCAL__coin}"
 
 			# check if in production mode.
 			[ "${GLOBAL__parameter_test}" == "disabled" ] && {
@@ -552,7 +584,7 @@ function galilel_bot__notification_wallet() {
 					"https://discordapp.com/api/webhooks" \
 					"${LOCAL__webhook_id}" \
 					"${LOCAL__webhook_token}" \
-					"${GLOBAL__parameter_text_transfer_out}" \
+					"${LOCAL__text_transfer_out}" \
 					"${LOCAL__amount}" \
 					"${LOCAL__coin}" \
 					"${LOCAL__balance}" \
@@ -584,34 +616,62 @@ function galilel_bot__notification_block() {
 	local LOCAL__block_hash="${2}"
 
 	# loop through the configuration array.
-	local LOCAL__index
-	for (( LOCAL__index = 0; LOCAL__index < "${#GLOBAL__parameter_configs[@]}" ; LOCAL__index++ )) ; do
+	local LOCAL__index="0"
+	while [ : ] ; do
 
-		# read data into variables.
-		IFS=',' read LOCAL__ticker LOCAL__rpc LOCAL__username LOCAL__password LOCAL__realm LOCAL__webhook_id LOCAL__webhook_token <<< "${GLOBAL__parameter_configs[${LOCAL__index}]}"
+		# parse variables.
+		local LOCAL__ticker="${COIN_CONFIGS[${LOCAL__index}_TICKER]}"
+		local LOCAL__rpc_url="${COIN_CONFIGS[${LOCAL__index}_RPC_URL]}"
+		local LOCAL__rpc_username="${COIN_CONFIGS[${LOCAL__index}_RPC_USERNAME]}"
+		local LOCAL__rpc_password="${COIN_CONFIGS[${LOCAL__index}_RPC_PASSWORD]}"
+		local LOCAL__monitor_block="${COIN_CONFIGS[${LOCAL__index}_MONITOR_BLOCK]}"
+		local LOCAL__monitor_wallet="${COIN_CONFIGS[${LOCAL__index}_MONITOR_WALLET]}"
+		local LOCAL__monitor_watch_only="${COIN_CONFIGS[${LOCAL__index}_MONITOR_WATCH_ONLY]}"
+		local LOCAL__webhook_id="${COIN_CONFIGS[${LOCAL__index}_WEBHOOK_ID]}"
+		local LOCAL__webhook_token="${COIN_CONFIGS[${LOCAL__index}_WEBHOOK_TOKEN]}"
+		local LOCAL__text_reward="${COIN_CONFIGS[${LOCAL__index}_TEXT_REWARD]}"
+		local LOCAL__text_transfer_in="${COIN_CONFIGS[${LOCAL__index}_TEXT_TRANSFER_IN]}"
+		local LOCAL__text_transfer_out="${COIN_CONFIGS[${LOCAL__index}_TEXT_TRANSFER_OUT]}"
+		local LOCAL__text_block="${COIN_CONFIGS[${LOCAL__index}_TEXT_BLOCK]}"
+
+		# increment counter.
+		((LOCAL__index++))
+
+		# check if end is reached.
+		[ -z "${LOCAL__ticker}" ] && {
+
+			# terminate loop.
+			break
+		}
 
 		# check if correct ticker.
-		[ "${LOCAL__coin}" != "${LOCAL__ticker}" ] && {
+		[ "${LOCAL__ticker}" !=  "${LOCAL__coin}" ] && {
 
 			# wrong ticker, so continue.
 			continue
 		}
 
 		# check if correct realm.
-		[ "${LOCAL__realm}" != "bk" ] && {
+		[ "${LOCAL__monitor_block}" != "yes" ] && {
 
 			# wrong realm, so continue.
 			continue
 		}
 
 		# get block information.
-		galilel_bot__rpc_get_block "${LOCAL__rpc}" "${LOCAL__username}" "${LOCAL__password}" "${LOCAL__block_hash}" || return "${?}"
+		galilel_bot__rpc_get_block \
+			"${LOCAL__rpc_url}" \
+			"${LOCAL__rpc_username}" \
+			"${LOCAL__rpc_password}" \
+			"${LOCAL__block_hash}" || return "${?}"
+
+		# parse result.
 		local LOCAL__height="${GLOBAL__result[0]}"
 		local LOCAL__difficulty="${GLOBAL__result[1]}"
 		local LOCAL__date="${GLOBAL__result[2]}"
 
 		# show information.
-		galilel_bot__printf FILE "${GLOBAL__parameter_text_block}" "${LOCAL__height}" "${LOCAL__date}" "${LOCAL__difficulty}"
+		galilel_bot__printf FILE "${LOCAL__text_block}" "${LOCAL__height}" "${LOCAL__date}" "${LOCAL__difficulty}"
 
 		# check if in production mode.
 		[ "${GLOBAL__parameter_test}" == "disabled" ] && {
@@ -621,7 +681,7 @@ function galilel_bot__notification_block() {
 				"https://discordapp.com/api/webhooks" \
 				"${LOCAL__webhook_id}" \
 				"${LOCAL__webhook_token}" \
-				"${GLOBAL__parameter_text_block}" \
+				"${LOCAL__text_block}" \
 				"${LOCAL__height}" \
 				"${LOCAL__date}" \
 				"${LOCAL__difficulty}"
@@ -654,22 +714,13 @@ function galilel_bot__init() {
 	# load configuration file.
 	source "${GLOBAL__parameter_conffile}"
 
-	# move config options to global variables.
-	GLOBAL__parameter_logfile="${LOGFILE}"
-	GLOBAL__parameter_configs=("${COIN_CONFIGS[@]}")
-	GLOBAL__parameter_watch_only="${WATCH_ONLY}"
-	GLOBAL__parameter_text_reward="${TEXT_REWARD}"
-	GLOBAL__parameter_text_transfer_in="${TEXT_TRANSFER_IN}"
-	GLOBAL__parameter_text_transfer_out="${TEXT_TRANSFER_OUT}"
-	GLOBAL__parameter_text_block="${TEXT_BLOCK}"
-
 	# check if logfile is enabled, directory and file is writable.
-	[ -n "${GLOBAL__parameter_logfile}" ] && {
+	[ -n "${LOGFILE}" ] && {
 
 		# check if directory exists, otherwise create it.
-		[ ! -d "${GLOBAL__parameter_logfile%/*}" ] && {
-			@MKDIR@ -p "${GLOBAL__parameter_logfile%/*}" 2> /dev/null || {
-				galilel_bot__printf HELP "${GALILEL_BOT_PROCESS}: logfile directory ${GLOBAL__parameter_logfile%/*} could not be created"
+		[ ! -d "${LOGFILE%/*}" ] && {
+			@MKDIR@ -p "${LOGFILE%/*}" 2> /dev/null || {
+				galilel_bot__printf HELP "${GALILEL_BOT_PROCESS}: logfile directory ${LOGFILE%/*} could not be created"
 
 				# return with error.
 				return 1
@@ -677,9 +728,9 @@ function galilel_bot__init() {
 		}
 
 		# check if directory is writable.
-		[ ! -w "${GLOBAL__parameter_logfile%/*}" ] && {
-			@TOUCH@ "${GLOBAL__parameter_logfile}" 2> /dev/null || {
-				galilel_bot__printf HELP "${GALILEL_BOT_PROCESS}: logfile ${GLOBAL__parameter_logfile} could not be created"
+		[ ! -w "${LOGFILE%/*}" ] && {
+			@TOUCH@ "${LOGFILE}" 2> /dev/null || {
+				galilel_bot__printf HELP "${GALILEL_BOT_PROCESS}: logfile ${LOGFILE} could not be created"
 
 				# return with error.
 				return 1

@@ -1,17 +1,35 @@
 # notification logfile (leave empty to disable).
 LOGFILE="@LOCALSTATEDIR@/log/galilel/galilel-bot.log"
 
-# coin configuration mappings (one per row, format: ticker,rpcurl,rpcuser,rpcpassword,realm,webhook-id,webhook-token).
+# coin configuration mappings (multiple coins can be configured, start with 0_ up to N_).
 COIN_CONFIGS=(
-	"GALI,http://127.0.0.1:36002,galilel-user,galilel-password,wt,823434590193434954,5fbJ3d531IKTk9X706d35R1uovFZfVTcAkDQUp4vjkH5xiLf6FIb2lUe6J4fCqbCdA9v"
-	"GALI,http://127.0.0.1:36002,galilel-user,galilel-password,bk,907862382457824421,94TsRdZNTa1neShJQ9pA7baGRx2yrY1P8EVZmQM0ubhkQKzIiuaX9QZ97KdquaUqZzdy"
+
+	# coin ticker.
+	[0_TICKER]="GALI"
+
+	# rpc url (can be local or remote).
+	[0_RPC_URL]="http://127.0.0.1:36002"
+
+	# rpc authentication data.
+	[0_RPC_USERNAME]="galilel-user"
+	[0_RPC_PASSWORD]="galilel-password"
+
+	# monitor block height changes (default is yes).
+	[0_MONITOR_BLOCK]="yes"
+
+	# monitor wallet balance changes (default is yes).
+	[0_MONITOR_WALLET]="yes"
+
+	# include watch only addresses, can degrade performance (default is no).
+	[0_MONITOR_WATCH_ONLY]="no"
+
+	# discord webhook authentication data.
+	[0_WEBHOOK_ID]="823434590193434954"
+	[0_WEBHOOK_TOKEN]="5fbJ3d531IKTk9X706d35R1uovFZfVTcAkDQUp4vjkH5xiLf6FIb2lUe6J4fCqbCdA9v"
+
+	# discord notification texts (if number of %s is changed, behavior is unknown).
+	[0_TEXT_REWARD]="Received staking reward **%s** %s with new balance of **%s** %s"
+	[0_TEXT_TRANSFER_IN]="Received donation of **%s** %s with new balance of **%s** %s"
+	[0_TEXT_TRANSFER_OUT]="Spend **%s** %s with new balance of **%s** %s"
+	[0_TEXT_BLOCK]="New block **%s** at **%s** with difficulty **%s**"
 )
-
-# include watch only addresses, can degrade performance (default is no).
-WATCH_ONLY="no"
-
-# notification texts (if number of %s is changed, behavior is unknown).
-TEXT_REWARD="Received staking reward **%s** %s with new balance of **%s** %s"
-TEXT_TRANSFER_IN="Received donation of **%s** %s with new balance of **%s** %s"
-TEXT_TRANSFER_OUT="Spend **%s** %s with new balance of **%s** %s"
-TEXT_BLOCK="New block **%s** at **%s** with difficulty **%s**"
