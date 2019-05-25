@@ -378,13 +378,26 @@ function galilel_bot__rpc_get_transaction() {
 
 	# check if mining reward.
 	[ "${LOCAL__confirmations}" != "0" ] &&
-	[ "${LOCAL__generated}" == "true" ] && {
+	[ "${LOCAL__generated}" == "true" ] &&
+	[ "${LOCAL__amount:0:1}" == "-" ] && {
 
 		# mining reward.
 		local LOCAL__type="reward-mining"
 
 		# calculate amount.
 		GLOBAL__result=("$(printf "%.8f+%.8f\n" "${LOCAL__fee}" "${LOCAL__amount}" | @BC@)")
+	}
+
+	# check if masternode reward.
+	[ "${LOCAL__confirmations}" != "0" ] &&
+	[ "${LOCAL__generated}" == "true" ] &&
+	[ "${LOCAL__amount:0:1}" != "-" ] && {
+
+		# mining reward.
+		local LOCAL__type="reward-masternode"
+
+		# calculate amount.
+		GLOBAL__result=("${LOCAL__amount}")
 	}
 
 	# export the result.
@@ -475,7 +488,8 @@ function galilel_bot__notification_wallet() {
 		local LOCAL__monitor_watch_only="${COIN_CONFIGS[${LOCAL__index}_MONITOR_WATCH_ONLY]}"
 		local LOCAL__webhook_id="${COIN_CONFIGS[${LOCAL__index}_WEBHOOK_ID]}"
 		local LOCAL__webhook_token="${COIN_CONFIGS[${LOCAL__index}_WEBHOOK_TOKEN]}"
-		local LOCAL__text_reward="${COIN_CONFIGS[${LOCAL__index}_TEXT_REWARD]}"
+		local LOCAL__text_reward_staking="${COIN_CONFIGS[${LOCAL__index}_TEXT_REWARD_STAKING]}"
+		local LOCAL__text_reward_masternode="${COIN_CONFIGS[${LOCAL__index}_TEXT_REWARD_MASTERNODE]}"
 		local LOCAL__text_transfer_in="${COIN_CONFIGS[${LOCAL__index}_TEXT_TRANSFER_IN]}"
 		local LOCAL__text_transfer_out="${COIN_CONFIGS[${LOCAL__index}_TEXT_TRANSFER_OUT]}"
 		local LOCAL__text_block="${COIN_CONFIGS[${LOCAL__index}_TEXT_BLOCK]}"
@@ -530,7 +544,7 @@ function galilel_bot__notification_wallet() {
 		[ "${LOCAL__type}" == "reward-mining" ] && {
 
 			# show information.
-			galilel_bot__printf FILE "${LOCAL__text_reward}" "${LOCAL__amount}" "${LOCAL__coin}" "${LOCAL__balance}" "${LOCAL__coin}"
+			galilel_bot__printf FILE "${LOCAL__text_reward_staking}" "${LOCAL__amount}" "${LOCAL__coin}" "${LOCAL__balance}" "${LOCAL__coin}"
 
 			# check if in production mode.
 			[ "${GLOBAL__parameter_test}" == "disabled" ] && {
@@ -540,7 +554,29 @@ function galilel_bot__notification_wallet() {
 					"https://discordapp.com/api/webhooks" \
 					"${LOCAL__webhook_id}" \
 					"${LOCAL__webhook_token}" \
-					"${LOCAL__text_reward}" \
+					"${LOCAL__text_reward_staking}" \
+					"${LOCAL__amount}" \
+					"${LOCAL__coin}" \
+					"${LOCAL__balance}" \
+					"${LOCAL__coin}"
+			}
+		}
+
+		# check if we found a pos block (masternode).
+		[ "${LOCAL__type}" == "reward-masternode" ] && {
+
+			# show information.
+			galilel_bot__printf FILE "${LOCAL__text_reward_masternode}" "${LOCAL__amount}" "${LOCAL__coin}" "${LOCAL__balance}" "${LOCAL__coin}"
+
+			# check if in production mode.
+			[ "${GLOBAL__parameter_test}" == "disabled" ] && {
+
+				# push wallet notification to discord.
+				galilel_bot__curl_discord \
+					"https://discordapp.com/api/webhooks" \
+					"${LOCAL__webhook_id}" \
+					"${LOCAL__webhook_token}" \
+					"${LOCAL__text_reward_masternode}" \
 					"${LOCAL__amount}" \
 					"${LOCAL__coin}" \
 					"${LOCAL__balance}" \
@@ -629,7 +665,8 @@ function galilel_bot__notification_block() {
 		local LOCAL__monitor_watch_only="${COIN_CONFIGS[${LOCAL__index}_MONITOR_WATCH_ONLY]}"
 		local LOCAL__webhook_id="${COIN_CONFIGS[${LOCAL__index}_WEBHOOK_ID]}"
 		local LOCAL__webhook_token="${COIN_CONFIGS[${LOCAL__index}_WEBHOOK_TOKEN]}"
-		local LOCAL__text_reward="${COIN_CONFIGS[${LOCAL__index}_TEXT_REWARD]}"
+		local LOCAL__text_reward_staking="${COIN_CONFIGS[${LOCAL__index}_TEXT_REWARD_STAKING]}"
+		local LOCAL__text_reward_masternode="${COIN_CONFIGS[${LOCAL__index}_TEXT_REWARD_MASTERNODE]}"
 		local LOCAL__text_transfer_in="${COIN_CONFIGS[${LOCAL__index}_TEXT_TRANSFER_IN]}"
 		local LOCAL__text_transfer_out="${COIN_CONFIGS[${LOCAL__index}_TEXT_TRANSFER_OUT]}"
 		local LOCAL__text_block="${COIN_CONFIGS[${LOCAL__index}_TEXT_BLOCK]}"

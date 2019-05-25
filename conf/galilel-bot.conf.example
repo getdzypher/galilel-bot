@@ -28,7 +28,8 @@ COIN_CONFIGS=(
 	[0_WEBHOOK_TOKEN]="5fbJ3d531IKTk9X706d35R1uovFZfVTcAkDQUp4vjkH5xiLf6FIb2lUe6J4fCqbCdA9v"
 
 	# discord notification texts (if number of %s is changed, behavior is unknown).
-	[0_TEXT_REWARD]="Received staking reward **%s** %s with new balance of **%s** %s"
+	[0_TEXT_REWARD_STAKING]="Received staking reward **%s** %s with new balance of **%s** %s"
+	[0_TEXT_REWARD_MASTERNODE]="Received masternode reward **%s** %s with new balance of **%s** %s"
 	[0_TEXT_TRANSFER_IN]="Received donation of **%s** %s with new balance of **%s** %s"
 	[0_TEXT_TRANSFER_OUT]="Spend **%s** %s with new balance of **%s** %s"
 	[0_TEXT_BLOCK]="New block **%s** at **%s** with difficulty **%s**"

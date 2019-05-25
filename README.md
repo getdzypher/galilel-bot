@@ -199,6 +199,27 @@ notification_wallet() Received staking reward **1.50000** GALI with new balance 
 notification_wallet() successful
 ```
 
+## Masternode Reward
+
+```
+$> galilel-bot --debug --test --notify-wallet GALI 3a6a2bd4bb657cb4274e6daf351ce92c8942c2f0cc8012ce4dd1c973daf14fc9
+init() starting
+init() successful
+notification_wallet() starting
+rpc_get_balance() starting
+curl_wallet() starting
+curl_wallet() json query: '{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "getbalance", "params" : [ ] }'
+curl_wallet() successful
+rpc_get_balance() successful
+rpc_get_transaction() starting
+curl_wallet() starting
+curl_wallet() json query: '{ "jsonrpc" : "1.0", "id" : "galilel-bot", "method" : "gettransaction", "params" : [ "3a6a2bd4bb657cb4274e6daf351ce92c8942c2f0cc8012ce4dd1c973daf14fc9" ] }'
+curl_wallet() successful
+rpc_get_transaction() successful
+notification_wallet() Received masternode reward **3.50000** GALI with new balance of **325623.40319** GALI
+notification_wallet() successful
+```
+
 ## Block Notification
 
 ```
