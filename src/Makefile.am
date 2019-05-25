@@ -23,8 +23,8 @@ install-data-hook:
 	$(sedpath) 's,@SYSCONFDIR@,$(sysconfdir),g' -i $(DESTDIR)${galilel_botdir}/galilel-bot.bash
 	$(chmodpath) 0755 $(DESTDIR)${galilel_botdir}/galilel-bot.bash
 	$(mkdirpath) -p $(DESTDIR)$(bindir)
-	$(lnpath) -s $(DESTDIR)${galilel_botdir}/galilel-bot.bash $(DESTDIR)$(bindir)/galilel-bot
+	$(lnpath) -sf $(DESTDIR)${galilel_botdir}/galilel-bot.bash $(DESTDIR)$(bindir)/galilel-bot
 
 # remove symlink from binary search path (created with install-data-hook).
 uninstall-hook:
-	$(rmpath) -sf $(DESTDIR)$(bindir)/galilel-bot
+	$(rmpath) -f $(DESTDIR)$(bindir)/galilel-bot
