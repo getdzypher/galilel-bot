@@ -22,6 +22,10 @@ export GALILEL_BOT_PROCESS="${0##*/}"
 export GALILEL_BOT_VERSION="@GALILEL_BOT_VERSION@"
 export GALILEL_BOT_AUTHOR="@GALILEL_BOT_AUTHOR@"
 
+# number format require international locales.
+unset LC_ALL
+export LC_NUMERIC="C"
+
 # global variables with sane defaults.
 declare -g GLOBAL__parameter_debug="disabled"
 declare -g GLOBAL__parameter_test="disabled"
