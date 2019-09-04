@@ -65,7 +65,7 @@ function galilel_bot__printf() {
 
 			# check if we should write to logfile.
 			[ -n "${LOGFILE}" ] && {
-				printf "$(/usr/bin/date '+%b %e %H:%M:%S') ${HOSTNAME} ${GALILEL_BOT_PROCESS}[$$]: ${FUNCNAME[1]##*__}() ${LOCAL__text}\n" "${@}" >> "${LOGFILE}"
+				printf "$(@DATE@ '+%b %e %H:%M:%S') ${HOSTNAME} ${GALILEL_BOT_PROCESS}[$$]: ${FUNCNAME[1]##*__}() ${LOCAL__text}\n" "${@}" >> "${LOGFILE}"
 			}
 		;;
 	esac
